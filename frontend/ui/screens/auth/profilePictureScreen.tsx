@@ -9,7 +9,7 @@ import { Avatar } from '@components/avatar';
 import { colors } from '@styles/colors';
 import * as ImagePicker from 'expo-image-picker';
 import { useAppDispatch } from '@redux/hooks';
-import { updateProfilePicture } from '@redux/slices/authSlice';
+import { setTempProfilePicture, completeRegistration } from '@redux/slices/authSlice';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
@@ -17,6 +17,7 @@ export const ProfilePictureScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const dispatch = useAppDispatch();
   const [image, setImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const pickImage = async () => {
     try {
@@ -37,18 +38,28 @@ export const ProfilePictureScreen = () => {
       if (!result.canceled) {
         const imageUri = result.assets[0].uri;
         setImage(imageUri);
-        dispatch(updateProfilePicture(imageUri));
+        dispatch(setTempProfilePicture(imageUri));
       }
     } catch (error) {
       console.error('Error picking image:', error);
+      alert('Error selecting image. Please try again.');
     }
   };
 
-  const handleNext = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: Routes.Welcome }]
-    });
+  const handleNext = async () => {
+    try {
+      setIsLoading(true);
+      await dispatch(completeRegistration()).unwrap();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: Routes.Welcome }]
+      });
+    } catch (error) {
+      console.error('Error completing registration:', error);
+      alert('Error completing registration. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -73,12 +84,14 @@ export const ProfilePictureScreen = () => {
             title="Add picture" 
             onPress={pickImage}
             variant="green"
+            disabled={isLoading}
           />
           <View style={styles.buttonSpacing}>
             <Button 
-              title="Continue" 
+              title={isLoading ? "Creating account..." : "Continue"}
               onPress={handleNext}
               variant="black" 
+              disabled={isLoading}
             />
           </View>
         </View>

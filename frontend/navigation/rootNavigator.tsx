@@ -1,3 +1,6 @@
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+
 // import routes and navigation
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -9,7 +12,8 @@ import { MainTabNavigator } from './mainTabNavigator';
 import CommentsScreen  from '@screens/modal/commentsScreen';
 
 // import auth context
-import { useAuth } from '../context/auth';
+import { useAppDispatch, useAppSelector } from '@redux/hooks';
+import { selectIsAuthenticated, selectIsLoading, initializeAuth } from '@redux/slices/authSlice';
 
 import { colors } from '@styles/colors';
 
@@ -19,27 +23,43 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 // 2 Flujos. El de register/login/forgetPassword y home de la app
 
 export const RootNavigator = () => {
-    
-  //const { isAuthenticated } = useAuth(); // Hook de autenticación
-  const isAuthenticated = true;
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  useEffect(() => {
+    const initAuth = async () => {
+      await dispatch(initializeAuth());
+      setIsInitialized(true);
+    };
+    initAuth();
+  }, [dispatch]);
+
+  if (!isInitialized) {
     return (
-      <NavigationContainer>
-        <RootStack.Navigator>
-          {!isAuthenticated ? (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.black }}>
+        <ActivityIndicator size="large" color={colors.text.white} />
+      </View>
+    );
+  }
+
+  return (
+    <NavigationContainer>
+      <RootStack.Navigator>
+        {!isAuthenticated ? (
+          <RootStack.Screen
+            name={Routes.Auth}
+            component={AuthStack}
+            options={{ headerShown: false }}
+          />
+        ) : (
+          <>
             <RootStack.Screen
-              name={Routes.Auth}
-              component={AuthStack}
+              name={Routes.MainTabs}
+              component={MainTabNavigator}
               options={{ headerShown: false }}
             />
-          ) : (
-            <>
-              <RootStack.Screen
-                name={Routes.MainTabs}
-                component={MainTabNavigator}
-                options={{ headerShown: false }}
-              />
-             <RootStack.Group 
+            <RootStack.Group 
               screenOptions={{ 
                 presentation: 'modal',
                 headerStyle: {
@@ -57,9 +77,9 @@ export const RootNavigator = () => {
                 }}
               />
             </RootStack.Group>
-            </>
-          )}
-        </RootStack.Navigator>
-      </NavigationContainer>
-    );
-  };
+          </>
+        )}
+      </RootStack.Navigator>
+    </NavigationContainer>
+  );
+};

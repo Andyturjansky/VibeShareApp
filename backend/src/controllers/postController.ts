@@ -47,14 +47,14 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
       location,
       media, // Almacena la URL y el tipo en el array de `media`
       comments: [],
-      likes: 0,
+      likes: [],
     });
 
     await newPost.save();
 
     res.status(201).json({ message: "Post creado con éxito", post: newPost });
   } catch (error) {
-    res.status(500).json({ error: "Error al crear el post" });
+    res.status(500).json({ error: "Error al crear el post", details: error });
   }
 };
 

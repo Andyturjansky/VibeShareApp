@@ -1,9 +1,9 @@
-// context/auth.tsx
 import React, { createContext, useContext, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '@redux/hooks';
 import { 
   login as loginAction, 
-  register as registerAction,
+  saveRegisterData,
+  completeRegistration,
   logout as logoutAction,
   deleteAccount as deleteAccountAction,
   selectIsAuthenticated,
@@ -14,7 +14,8 @@ import { UserAuth, RegisterCredentials } from '@components/auth/types';
 type AuthContextType = {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (credentials: RegisterCredentials) => Promise<void>; 
+  register: (credentials: RegisterCredentials) => Promise<RegisterCredentials>;
+  finalizeRegistration: () => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   user: UserAuth | null;
@@ -38,9 +39,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const register = useCallback(async (credentials: RegisterCredentials) => {
     try {
-      await dispatch(registerAction(credentials)).unwrap();
+      await dispatch(saveRegisterData(credentials)).unwrap();
+      return credentials; // Retorna las credenciales para uso posterior
     } catch (error) {
       console.error('Register error:', error);
+      throw error;
+    }
+  }, [dispatch]);
+  
+  const finalizeRegistration = useCallback(async () => {
+    try {
+      await dispatch(completeRegistration()).unwrap();
+    } catch (error) {
+      console.error('Complete registration error:', error);
       throw error;
     }
   }, [dispatch]);
@@ -66,7 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const value = {
     isAuthenticated,
     login,
-    register, // Añadido
+    register,
+    finalizeRegistration,
     logout,
     deleteAccount,
     user,

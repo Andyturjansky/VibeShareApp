@@ -8,6 +8,8 @@ import { Button } from '@components/common/button';
 import { Input } from '@components/common/input';
 import { colors } from '@styles/colors';
 import { ChevronLeft } from 'lucide-react-native';
+import { useAppDispatch } from '@redux/hooks';
+import { sendVerificationCode, verifyCode } from '@redux/slices/authSlice';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList & RootStackParamList>;
 type VerificationCodeScreenRouteProp = RouteProp<AuthStackParamList, Routes.VerificationCode>;
@@ -19,6 +21,7 @@ export const VerificationCodeScreen = () => {
 
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | undefined>();
+  const dispatch = useAppDispatch();
 
   const handleSubmit = async () => {
     if (!code.trim()) {
@@ -27,25 +30,27 @@ export const VerificationCodeScreen = () => {
     }
 
     try {
-      // Aca va la validación del código con la API
-      // await api.verifyCode(email, code);
+      await dispatch(verifyCode({ 
+        emailOrUsername: email, 
+        code: code.trim() 
+      })).unwrap();
       
       navigation.reset({
         index: 0,
         routes: [{ name: Routes.MainTabs }]
       });
     } catch (error) {
-      setError('Invalid verification code');
+      setError(typeof error === 'string' ? error : 'Invalid verification code');
     }
   };
 
   const handleResend = async () => {
     try {
-      // Aquí irá la lógica para reenviar el código
-      // await api.resendVerificationCode(email);
+      await dispatch(sendVerificationCode(email)).unwrap();
       setError(undefined);
+      // Opcional: mostrar un mensaje de éxito
     } catch (error) {
-      console.error('Error resending code:', error);
+      setError(typeof error === 'string' ? error : 'Failed to resend code');
     }
   };
 

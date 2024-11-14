@@ -8,41 +8,38 @@ import { Button } from '@components/common/button';
 import { Input } from '@components/common/input';
 import { colors } from '@styles/colors';
 import { Lock } from 'lucide-react-native';
+import { useAppDispatch } from '@redux/hooks';
+import { sendVerificationCode } from '@redux/slices/authSlice';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 export const ForgotPasswordScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState<string | undefined>(undefined);
+  const dispatch = useAppDispatch();
+  const [identifier, setIdentifier] = useState('');
+  const [error, setError] = useState<string | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  const handleIdentifierChange = (text: string) => {
+    setIdentifier(text);
+    setError(undefined);
   };
 
-  const handleEmailChange = (text: string) => {
-    setEmail(text);
-    // Solo validamos si hay texto
-    if (text.length > 0 && !validateEmail(text)) {
-      setEmailError('Please enter a valid email format (example@domain.com)');
-    } else {
-      setEmailError(undefined);
-    }
-  };
-
-  const handleSendCode = () => {
-    if (!email) {
-      setEmailError('Email is required');
-      return;
-    }
-    
-    if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email format (example@domain.com)');
+  const handleSendCode = async () => {
+    if (!identifier.trim()) {
+      setError('Please enter your email or username');
       return;
     }
 
-    navigation.navigate(Routes.VerificationCode, { email });
+    setIsLoading(true);
+    try {
+      await dispatch(sendVerificationCode(identifier.trim())).unwrap();
+      navigation.navigate(Routes.VerificationCode, { email: identifier.trim() });
+    } catch (error) {
+      setError(typeof error === 'string' ? error : 'User not found');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,25 +47,21 @@ export const ForgotPasswordScreen = () => {
       <View style={styles.content}>
         <View style={styles.mainContent}>
           <View style={styles.iconContainer}>
-            <Lock 
-              size={32} 
-              color={colors.text.white}
-            />
+            <Lock size={32} color={colors.text.white} />
           </View>
 
           <Text style={styles.title}>Trouble with logging in?</Text>
           <Text style={styles.subtitle}>
-            Enter your email address, and we'll send you a verification code to get back into your account.
+            Enter your email address or username, and we'll send you a verification code to get back into your account.
           </Text>
 
           <View style={styles.inputContainer}>
             <Input
-              placeholder="Email"
-              value={email}
-              onChangeText={handleEmailChange}
+              placeholder="Email or Username"
+              value={identifier}
+              onChangeText={handleIdentifierChange}
               autoCapitalize="none"
-              keyboardType="email-address"
-              error={emailError}
+              error={error}
             />
           </View>
 
@@ -77,6 +70,8 @@ export const ForgotPasswordScreen = () => {
               title="Send Verification Code"
               onPress={handleSendCode}
               variant="green"
+              disabled={isLoading}
+              loading={isLoading}
             />
           </View>
         </View>

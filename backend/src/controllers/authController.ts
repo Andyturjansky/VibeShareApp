@@ -64,7 +64,24 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
 
     await newUser.save();
-    res.status(201).json({ message: "Usuario creado" });
+    
+    // Generar token JWT
+    const token = jwt.sign({ id: newUser._id }, JWT_SECRET, { expiresIn: "1h" });
+
+    // Enviar respuesta con token y datos del usuario
+    res.status(201).json({
+      message: "Usuario creado",
+      token,
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        name: newUser.name,
+        surname: newUser.surname,
+        profilePicture: newUser.profilePicture,
+        gender: newUser.gender,
+      },
+    });
 
   } catch (error) {
     console.error("Error in user registration:", error);
@@ -83,16 +100,31 @@ export const login = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({ error: "Credenciales inválidas" });
     }
+
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(400).json({ error: "Credenciales inválidas" });
     }
+
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
-    res.status(200).json({ token });
+
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        surname: user.surname,
+        profilePicture: user.profilePicture,
+        gender: user.gender,
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
+
 
 export const updatePassword = async (req: Request, res: Response) => {
   const { newPassword } = req.body; // Recibimos la nueva contraseña
@@ -215,8 +247,19 @@ export const loginWithCode = async (req: Request, res: Response) : Promise<void>
     // Elimina el código después de usarlo
     delete verificationCodes[user.email];
 
-    // Retorna el token para que el usuario pueda iniciar sesión
-    res.status(200).json({ token });
+    // Retorna el token para que el usuario pueda iniciar sesión y los datos del usuario
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        surname: user.surname,
+        profilePicture: user.profilePicture,
+        gender: user.gender,
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: "Error interno del servidor" });
   }

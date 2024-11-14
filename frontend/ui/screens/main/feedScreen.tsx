@@ -1,8 +1,16 @@
-import React, { useCallback, useState, useRef } from 'react';
-import { Text, FlatList, RefreshControl, ActivityIndicator, View, StyleSheet } from 'react-native';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { FlatList, RefreshControl, ActivityIndicator, View, StyleSheet } from 'react-native';
 import { useScrollToTop } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
 import Post from '@components/post';
 import { Post as PostType } from '@components/post/types';
+import { colors } from '@styles/colors';
+import CommentsBottomSheet from '@components/comment/commentsBottom';
+import { setPosts, toggleLike, toggleSave } from '@redux/slices/postsSlice';
+import { RootState } from '@redux/store';
+import { getFeedPosts } from '@networking/api/feed';
+import { EmptyState } from '@components/common/emptyState';
+import { ErrorState } from '@components/common/errorState';
 
 interface FeedScreenProps {
   navigation: any;
@@ -10,92 +18,92 @@ interface FeedScreenProps {
 }
 
 const FeedScreen = ({ navigation, onScrollPositionChange }: FeedScreenProps) => {
+  const dispatch = useDispatch();
+  const posts = useSelector((state: RootState) => state.posts.posts);
+  
   const flatListRef = useRef<FlatList>(null);
-  const [lastPosition, setLastPosition] = useState(0);
-  const [isAtTop, setIsAtTop] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [posts, setPosts] = useState<PostType[]>([]);
-  
-  // Referencias para el manejo de taps múltiples
-  const lastTapTimeRef = useRef<number>(0);
-  const tapCountRef = useRef<number>(0);
-  const tapTimeoutRef = useRef<NodeJS.Timeout>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [lastPosition, setLastPosition] = useState(0);
+  const [isAtTop, setIsAtTop] = useState(true);
 
-  useScrollToTop(flatListRef);
+  const loadPosts = async (page: number = 0, refresh: boolean = false) => {
+    try {
+      setError(null);
+      const response = await getFeedPosts(page);
+      
+      if (refresh) {
+        dispatch(setPosts(response.posts));
+      } else {
+        // Concatenamos los nuevos posts manteniendo el orden
+        const updatedPosts = [...posts, ...response.posts];
+        // Eliminamos duplicados si los hubiera (por id)
+        const uniquePosts = Array.from(new Map(updatedPosts.map(post => [post.id, post])).values());
+        // Ordenamos para asegurar que los más recientes estén primero
+        const sortedPosts = uniquePosts.sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        
+        dispatch(setPosts(sortedPosts));
+      }
+      
+      setHasMore(response.hasMore);
+    } catch (error) {
+      setError('No se pudieron cargar los posts. Por favor, intenta nuevamente.');
+      console.error('Error loading posts:', error);
+    }
+   };
 
-  const resetTapCount = () => {
-    tapCountRef.current = 0;
-    if (tapTimeoutRef.current) {
-      clearTimeout(tapTimeoutRef.current);
+  const initializeFeed = async () => {
+    setIsLoading(true);
+    try {
+      await loadPosts(0, true);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    initializeFeed();
+  }, []);
+
+  useScrollToTop(flatListRef);
+
   const handleTabPress = useCallback(() => {
-    const now = Date.now();
-    const TRIPLE_TAP_DELAY = 500; // 500ms para detectar triple tap
-    
-    // Incrementar el contador de taps
-    tapCountRef.current += 1;
-    
-    // Resetear el contador después de TRIPLE_TAP_DELAY ms
-    if (tapTimeoutRef.current) {
-      clearTimeout(tapTimeoutRef.current);
-    }
-    tapTimeoutRef.current = setTimeout(resetTapCount, TRIPLE_TAP_DELAY);
-
-    // Si es un triple tap, realizar refresh
-    if (tapCountRef.current === 3) {
-      handleRefresh();
-      resetTapCount();
-      return;
-    }
-
-    // Si es un tap simple o doble, manejar el scroll
     if (isAtTop && lastPosition > 0) {
-      // Si estamos en el top y hay una posición guardada, volver a ella
       flatListRef.current?.scrollToOffset({
         offset: lastPosition,
         animated: true
       });
       setIsAtTop(false);
     } else {
-      // Si no estamos en el top o no hay posición guardada, ir arriba
       flatListRef.current?.scrollToOffset({
         offset: 0,
         animated: true
       });
       setIsAtTop(true);
     }
-
-    lastTapTimeRef.current = now;
   }, [isAtTop, lastPosition]);
 
-  // Registrar el handler para el tab press
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = navigation.addListener('tabPress', (e: any) => {
       if (navigation.isFocused()) {
         e.preventDefault();
         handleTabPress();
-      } else {
-        resetTapCount(); // Resetear contador si cambiamos de tab
       }
     });
-
-    return () => {
-      unsubscribe();
-      if (tapTimeoutRef.current) {
-        clearTimeout(tapTimeoutRef.current);
-      }
-    };
+    return unsubscribe;
   }, [navigation, handleTabPress]);
 
   const handleScroll = (event: any) => {
     const currentOffset = event.nativeEvent.contentOffset.y;
     onScrollPositionChange?.(currentOffset);
-    
     setIsAtTop(currentOffset === 0);
-    
     if (currentOffset > 0) {
       setLastPosition(currentOffset);
     }
@@ -103,58 +111,44 @@ const FeedScreen = ({ navigation, onScrollPositionChange }: FeedScreenProps) => 
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
+    setCurrentPage(0);
     try {
-      // Lógica para recargar posts
-      // await fetchPosts();
-    } catch (error) {
-      console.error('Error refreshing feed:', error);
+      await loadPosts(0, true);
     } finally {
       setIsRefreshing(false);
     }
   }, []);
 
-  // Resto del código igual...
-  const handleLoadMore = useCallback(async () => {
-    if (isLoadingMore) return;
+const handleLoadMore = useCallback(async () => {
+ if (isLoadingMore || !hasMore) return;
 
-    setIsLoadingMore(true);
-    try {
-      // Lógica para cargar más posts
-      // await fetchMorePosts();
-    } catch (error) {
-      console.error('Error loading more posts:', error);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [isLoadingMore]);
+ setIsLoadingMore(true);
+ try {
+   const nextPage = currentPage + 1;
+   await loadPosts(nextPage);
+   setCurrentPage(nextPage);
+ } catch (error) {
+   console.error('Error loading more posts:', error);
+ } finally {
+   setIsLoadingMore(false);
+ }
+}, [isLoadingMore, hasMore, currentPage, posts]);
 
   const handleLikePress = useCallback((postId: string) => {
-    setPosts(currentPosts => 
-      currentPosts.map(post => 
-        post.id === postId
-          ? { 
-              ...post, 
-              isLiked: !post.isLiked,
-              likesCount: post.isLiked ? post.likesCount - 1 : post.likesCount + 1
-            }
-          : post
-      )
-    );
-  }, []);
+    dispatch(toggleLike(postId));
+  }, [dispatch]);
 
   const handleSavePress = useCallback((postId: string) => {
-    setPosts(currentPosts =>
-      currentPosts.map(post =>
-        post.id === postId
-          ? { ...post, isSaved: !post.isSaved }
-          : post
-      )
-    );
-  }, []);
+    dispatch(toggleSave(postId));
+  }, [dispatch]);
 
   const handleCommentPress = useCallback((postId: string) => {
-    navigation.navigate('Comments', { postId });
-  }, [navigation]);
+    setSelectedPostId(postId);
+  }, []);
+
+  const handleCloseComments = useCallback(() => {
+    setSelectedPostId(null);
+  }, []);
 
   const handleUserPress = useCallback((userId: string) => {
     navigation.navigate('Profile', { userId });
@@ -180,38 +174,54 @@ const FeedScreen = ({ navigation, onScrollPositionChange }: FeedScreenProps) => 
     );
   };
 
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.text.white} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={initializeFeed} />;
+  }
+
+  if (!isLoading && posts.length === 0) {
+    return <EmptyState message="No hay posts para mostrar" />;
+  }
+
   return (
-    <FlatList
-      ref={flatListRef}
-      data={posts}
-      renderItem={renderPost}
-      keyExtractor={item => item.id}
-      onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={renderFooter}
-      onScroll={handleScroll}
-      scrollEventThrottle={16}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          tintColor="#999999"
-        />
-      }
-      showsVerticalScrollIndicator={false}
-      maxToRenderPerBatch={5}
-      windowSize={5}
-      removeClippedSubviews={true}
-      initialNumToRender={5}
-      ListEmptyComponent={() => (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No posts yet</Text>
-        </View>
-      )}
-      contentContainerStyle={
-        posts.length === 0 ? styles.emptyList : undefined
-      }
-    />
+    <>
+      <FlatList
+        ref={flatListRef}
+        data={posts}
+        renderItem={renderPost}
+        keyExtractor={item => item.id}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
+        onScroll={handleScroll}
+        refreshControl={
+          <RefreshControl 
+            refreshing={isRefreshing} 
+            onRefresh={handleRefresh}
+            tintColor={colors.text.white}
+            colors={[colors.text.white]}
+            progressBackgroundColor={colors.background.black}
+          />
+        }
+        contentContainerStyle={{ 
+          backgroundColor: colors.background.black,
+          flexGrow: 1 // Asegura que EmptyState se centre cuando no hay posts
+        }} 
+        style={{ backgroundColor: colors.background.black }}
+      />
+      <CommentsBottomSheet
+        postId={selectedPostId || ''}
+        isVisible={!!selectedPostId}
+        onClose={handleCloseComments}
+      />
+    </>
   );
 };
 
@@ -220,19 +230,12 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
-  emptyContainer: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666666',
-  },
-  emptyList: {
-    flex: 1,
-  },
+    backgroundColor: colors.background.black,
+  }
 });
 
 export default FeedScreen;

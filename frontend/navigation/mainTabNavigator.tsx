@@ -57,7 +57,7 @@ export const MainTabNavigator = () => {
     >
       <Tab.Screen
         name={Routes.Home}
-        component={FeedScreenTest}
+        component={FeedScreen}
         options={{
           headerShown: true,
           headerTitle: () => (

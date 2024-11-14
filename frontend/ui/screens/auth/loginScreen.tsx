@@ -9,25 +9,47 @@ import { Input } from '@components/common/input';
 import { Button } from '@components/common/button';
 import { Logo } from '@components/common/logo';
 import { colors } from '@styles/colors';
+import { useAppDispatch } from '@redux/hooks';
+import { login } from '@redux/slices/authSlice';
+import { LoginCredentials } from '@components/auth/types';
 import googleIcon from '@assets/icons/btn_google/web_dark_sq_ctn.svg';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList & RootStackParamList>;
 
 export const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
+  const dispatch = useAppDispatch();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  //const { login } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     try {
-      await login(email, password);
+      setIsLoading(true);
+      setError(null);
+
+      // Nos fijamos si el input es un email o username para que coincida con el back
+      const isEmail = email.includes('@');
+      const credentials: LoginCredentials = {
+        password,
+        ...(isEmail ? { email } : { username: email })
+      };
+      
+      await dispatch(login(credentials)).unwrap();
+      /*
       navigation.reset({
         index: 0,
         routes: [{ name: Routes.MainTabs }]
       });
-    } catch (error) {
-      console.error(error);
+      */
+     
+    } catch (error: any) {
+      setError(error?.message || 'Failed to login');
+      console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -39,18 +61,30 @@ export const LoginScreen = () => {
         </View>
 
         <View style={styles.form}>
+        {error && (
+            <Text style={styles.errorText}>{error}</Text>
+          )}
+
           <Input
             placeholder="Username or email"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setError(null);
+            }}
             autoCapitalize="none"
             keyboardType="email-address"
+            editable={!isLoading}
           />
           <Input
             placeholder="Password"
             secureTextEntry
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              setError(null);
+            }}
+            editable={!isLoading}
           />
           
           <Pressable 
@@ -63,7 +97,12 @@ export const LoginScreen = () => {
             <Text style={styles.forgotPasswordText}>Forgot password?</Text>
           </Pressable>
 
-          <Button title="Sign in" onPress={handleLogin} variant="green" />
+          <Button 
+            title={isLoading ? "Signing in..." : "Sign in"} 
+            onPress={handleLogin} 
+            variant="green"
+            disabled={isLoading}
+          />
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
@@ -75,6 +114,7 @@ export const LoginScreen = () => {
             title="Continue with Google" 
             variant="black" 
             onPress={() => {/* Handle Google login */}}
+            disabled={isLoading}
           />
         </View>
       </View>
@@ -149,5 +189,10 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginBottom: 10,
   },
 });

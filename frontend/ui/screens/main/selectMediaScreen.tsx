@@ -14,9 +14,9 @@ type PostScreenParams = {
       mediaUri: string;
       mediaType: 'image' | 'video';
     };
-  };
+};
   
-  type PostNavigationProp = NativeStackNavigationProp<PostScreenParams>;
+type PostNavigationProp = NativeStackNavigationProp<PostScreenParams>;
 
 const SelectMediaScreen = () => {
   const navigation = useNavigation<PostNavigationProp>();
@@ -35,35 +35,51 @@ const SelectMediaScreen = () => {
   }, []);
 
   const pickMedia = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'], // Actualizado según la nueva API
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+        exif: true
+      });
 
-    if (!result.canceled) {
-      setSelectedMedia(result.assets[0].uri);
-      setMediaType(result.assets[0].type === 'video' ? 'video' : 'image');
+      console.log('Media picked:', result);
+
+      if (!result.canceled) {
+        const asset = result.assets[0];
+        setSelectedMedia(asset.uri);
+        // Determinar el tipo de medio basado en el tipo MIME
+        setMediaType(asset.type === 'video' ? 'video' : 'image');
+      }
+    } catch (error) {
+      console.error('Error picking media:', error);
+      alert('Failed to select media. Please try again.');
     }
   };
 
   const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Sorry, we need camera permissions to make this work!');
-      return;
-    }
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Sorry, we need camera permissions to make this work!');
+        return;
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
 
-    if (!result.canceled) {
-      setSelectedMedia(result.assets[0].uri);
-      setMediaType('image');
+      if (!result.canceled) {
+        const asset = result.assets[0];
+        setSelectedMedia(asset.uri);
+        setMediaType('image'); // La cámara siempre producirá una imagen
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      alert('Failed to take photo. Please try again.');
     }
   };
 
@@ -127,7 +143,7 @@ const SelectMediaScreen = () => {
           <Text style={styles.buttonText}>Camera</Text>
         </Pressable>
       </View>
-      </SafeAreaView>
+    </SafeAreaView>
   );
 };
 

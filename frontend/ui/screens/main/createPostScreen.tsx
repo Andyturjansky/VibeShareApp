@@ -1,16 +1,17 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, Image, StyleSheet, Platform, Alert, KeyboardAvoidingView, ScrollView } from 'react-native';
+import { View, Text, TextInput, Image, StyleSheet, Platform, Alert, ScrollView } from 'react-native';
 import { Pressable } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { colors } from '@styles/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Routes, RootStackParamList, PostStackParamList } from '@navigation/types';
-import { useAppDispatch } from '@redux/hooks';
-import { createPost } from '@redux/slices/postsSlice';
+import { useAppDispatch, useAppSelector } from '@redux/hooks';
+import { createPostThunk } from '@redux/thunks/postThunks';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getCurrentLocation } from '@utils/locationHelper';
 import { Button } from '@components/common/button';
+import { selectLoading } from '@redux/slices/postsSlice';
 
 type CreatePostRouteProp = RouteProp<PostStackParamList, Routes.CreatePost>;
 type CreatePostNavigationProp = NativeStackNavigationProp<PostStackParamList & RootStackParamList>;
@@ -23,12 +24,13 @@ const CreatePostScreen = () => {
   const { mediaUri, mediaType } = route.params;
   const [caption, setCaption] = useState('');
   const [location, setLocation] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLocationLoading, setIsLocationLoading] = useState(false);
+  const isLoading = useAppSelector(selectLoading);
 
   const handleGetLocation = useCallback(async () => {
     try {
       await getCurrentLocation(
-        setIsLoading,
+        setIsLocationLoading,
         (value: string) => setLocation(value)
       );
     } catch (error) {
@@ -39,30 +41,28 @@ const CreatePostScreen = () => {
 
   const handlePost = async () => {
     try {
+      console.log('Starting post creation...'); // Debug log
+      console.log('Media URI:', mediaUri); // Debug log
+      console.log('Media Type:', mediaType); // Debug log
+      console.log('Caption:', caption); // Debug log
+      console.log('Location:', location); // Debug log
+
       if (!caption.trim() || !location.trim()) {
         Alert.alert('Error', 'Please fill in all fields');
         return;
       }
 
-      await dispatch(createPost({
-        id: Date.now().toString(),
-        user: {
-          id: 'currentUserId',
-          username: 'currentUsername', 
-          profilePicture: 'https://i.pravatar.cc/150?img=10' 
-        },
-        imageUrl: mediaUri,
+      console.log('Dispatching createPostThunk...'); // Debug log
+      const result = await dispatch(createPostThunk({
+        mediaUri,
+        mediaType,
+        caption: caption.trim(),
         location: location.trim(),
-        description: caption.trim(),
-        likesCount: 0,
-        isLiked: false,
-        isSaved: false,
-        createdAt: new Date().toISOString(),
-        commentsCount: 0,
-        comments: [], 
-        mediaType: mediaType as 'image' | 'video'
-      }));
+      })).unwrap();
 
+      console.log('Post created successfully:', result); // Debug log
+
+      // Si la creación fue exitosa, navegamos de vuelta al feed
       navigation.reset({
         index: 0,
         routes: [
@@ -76,13 +76,25 @@ const CreatePostScreen = () => {
         ]
       });
     } catch (error) {
-      Alert.alert('Error', 'Could not create post. Please try again.');
+      console.error('Error creating post:', error); // Debug log
+      Alert.alert(
+        'Error',
+        'Could not create post. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
+  // Debug render log
+  console.log('Render state:', {
+    isLoading,
+    hasMedia: !!mediaUri,
+    hasCaption: !!caption,
+    hasLocation: !!location
+  });
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header fijo arriba */}
       <View style={styles.header}>
         <Pressable 
           onPress={() => navigation.goBack()}
@@ -93,8 +105,7 @@ const CreatePostScreen = () => {
         <Text style={styles.headerTitle}>New post</Text>
         <View style={styles.headerRight} />
       </View>
-  
-      {/* Contenido principal con scroll */}
+
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -103,7 +114,7 @@ const CreatePostScreen = () => {
         <View style={styles.mediaPreview}>
           <Image source={{ uri: mediaUri }} style={styles.previewImage} />
         </View>
-  
+
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Write a caption for your post!</Text>
           <TextInput
@@ -112,9 +123,10 @@ const CreatePostScreen = () => {
             placeholderTextColor={colors.input.placeholder}
             value={caption}
             onChangeText={setCaption}
+            editable={!isLoading}
           />
         </View>
-  
+
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Where was this photo taken?</Text>
           <TextInput
@@ -123,10 +135,11 @@ const CreatePostScreen = () => {
             placeholderTextColor={colors.input.placeholder}
             value={location}
             onChangeText={setLocation}
+            editable={!isLoading}
           />
           <Pressable 
             onPress={handleGetLocation}
-            disabled={isLoading}
+            disabled={isLoading || isLocationLoading}
             style={styles.useLocationButton}
           >
             <Text style={styles.useLocationText}>
@@ -134,18 +147,16 @@ const CreatePostScreen = () => {
             </Text>
           </Pressable>
         </View>
-  
-        {/* Espacio adicional para asegurar que el scroll llegue abajo del botón */}
+
         <View style={{ height: 80 }} />
       </ScrollView>
-  
-      {/* Botón fijo abajo */}
+
       <View style={styles.buttonContainer}>
         <Button
-          title="Post"
+          title={isLoading ? "Creating post..." : "Post"}
           onPress={handlePost}
           variant="green"
-          disabled={!caption.trim() || !location.trim()}
+          disabled={isLoading || !caption.trim() || !location.trim()}
         />
       </View>
     </SafeAreaView>

@@ -3,7 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { styles } from './styles';
 import { PostHeaderProps } from './types';
 import Avatar from '../avatar';
-import { formatDate } from '../../utils/dateUtils';
+import { formatDate } from '@utils/dateUtils';
 
 const PostHeader = ({
   user,

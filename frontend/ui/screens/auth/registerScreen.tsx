@@ -11,6 +11,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RegisterFormData, RegisterCredentials } from '@components/auth/types';
 import { AuthStackParamList } from '@navigation/types';
 import ArrowDropDownList from '@assets/icons/arrowDropDownList.svg';
+import { saveRegisterData } from '@redux/slices/authSlice';
+import { useAppDispatch } from '@redux/hooks';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
@@ -90,7 +92,8 @@ const initialFormData: RegisterFormData = {
 
 export const RegisterScreen = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { register } = useAuth();
+  const dispatch = useAppDispatch(); 
+  //const { register } = useAuth();
   const [formData, setFormData] = useState<RegisterFormData>(initialFormData);
 
   const handleUpdateForm = (key: keyof RegisterFormData, value: string) => {
@@ -108,10 +111,10 @@ export const RegisterScreen = () => {
         gender: formData.gender
       };
 
-      await register(credentials);
+      await dispatch(saveRegisterData(credentials)).unwrap();
       navigation.navigate(Routes.ProfilePicture);
     } catch (error) {
-      console.error(error);
+      console.error('Error during registration:', error);
     }
   };
 

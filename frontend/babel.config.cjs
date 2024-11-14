@@ -11,6 +11,7 @@ module.exports = function(api) {
           '@components': './ui/components',
           '@screens': './ui/screens',
           '@navigation': './navigation',
+          '@networking': './networking',
           '@styles': './ui/styles',
           '@assets': './assets',
           '@hooks': './hooks',

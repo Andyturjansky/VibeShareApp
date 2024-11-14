@@ -1,25 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@navigation/types';
+import { CommonActions } from '@react-navigation/native';
 import { Routes } from '@navigation/types';
 import { Logo } from '@components/common/logo';
 import { Avatar } from '@components/avatar';
 import { colors } from '@styles/colors';
-import { useAuth } from '@context/auth';
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+import { useAppSelector } from '@redux/hooks';
+import { selectUser, selectToken } from '@redux/slices/authSlice';
 
 export const WelcomeScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
-  const { user } = useAuth();
+  const navigation = useNavigation();
+  const user = useAppSelector(selectUser);
+  const token = useAppSelector(selectToken); 
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleEnter = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: Routes.MainTabs }]
-    });
+  const handleEnter = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Current token:', token); // Para debug
+      // Navegamos directamente a MainTabs
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: Routes.MainTabs }]
+        })
+      );
+    } catch (error) {
+      console.error('Navigation error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -52,20 +63,27 @@ export const WelcomeScreen = () => {
         <Pressable 
           style={({ pressed }) => [
             styles.enterButton,
-            pressed && { opacity: 0.8 }
+            pressed && { opacity: 0.8 },
+            isLoading && styles.disabled // Agregar este estilo si quieres deshabilitar visualmente
           ]}
           onPress={handleEnter}
+          disabled={isLoading}
         >
           <Image 
-          source={require('@assets/images/adaptive-icon.png')}
-          style={styles.logoImage}
-          resizeMode="contain"
+            source={require('@assets/images/adaptive-icon.png')}
+            style={[
+              styles.logoImage,
+              isLoading && styles.imageDisabled // Opcional: estilo para la imagen cuando está cargando
+            ]}
+            resizeMode="contain"
           />
         </Pressable>
-    
-          <Text style={styles.hint}>
-            Press the button to enter, you will be redirected to your profile
-          </Text>
+
+        <Text style={styles.hint}>
+          {isLoading 
+            ? "Setting up your profile..." 
+            : "Press the button to enter, you will be redirected to your profile"}
+        </Text>
         </View>
       </View>
     </View>
@@ -133,6 +151,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
     maxWidth: '80%',
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  imageDisabled: {
+    opacity: 0.7,
   },
 });
 

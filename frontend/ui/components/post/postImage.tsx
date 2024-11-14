@@ -86,7 +86,7 @@ const PostImage = ({ imageUrl, postId, onLike }: PostImageProps) => {
           {hasError && (
             <View style={additionalStyles.errorContainer}>
               <Text style={additionalStyles.errorText}>
-                Unable to load image
+                Unable to load post
               </Text>
             </View>
           )}

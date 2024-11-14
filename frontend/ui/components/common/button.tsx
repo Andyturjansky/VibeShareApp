@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet } from 'react-native';
+import { Pressable, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { colors } from '@styles/colors';
 
 type ButtonProps = {
@@ -7,25 +7,40 @@ type ButtonProps = {
   onPress: () => void;
   variant?: 'green' | 'black';
   disabled?: boolean;
+  loading?: boolean;
 };
 
-export const Button = ({ title, onPress, variant = 'green', disabled }: ButtonProps) => (
+export const Button = ({ 
+  title, 
+  onPress, 
+  variant = 'green', 
+  disabled, 
+  loading 
+}: ButtonProps) => (
   <Pressable 
     style={({ pressed }) => [
       styles.button, 
       styles[variant], 
-      { opacity: pressed ? 0.7 : disabled ? 0.5 : 1 },
-      disabled && styles.disabled
+      { opacity: pressed ? 0.7 : (disabled || loading) ? 0.5 : 1 },
+      (disabled || loading) && styles.disabled
     ]} 
     onPress={onPress}
-    disabled={disabled}
+    disabled={disabled || loading}
   >
-    <Text style={[styles.buttonText, variant === 'black' && styles.blackText]}>
-      {title}
-    </Text>
+    {loading ? (
+      <ActivityIndicator 
+        color={variant === 'black' ? colors.text.green : colors.text.white} 
+        size="small"
+      />
+    ) : (
+      <Text style={[styles.buttonText, variant === 'black' && styles.blackText]}>
+        {title}
+      </Text>
+    )}
   </Pressable>
 );
 
+// Mantenemos los estilos exactamente como estaban
 const styles = StyleSheet.create({
   button: {
     padding: 8,

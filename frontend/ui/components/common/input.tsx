@@ -1,4 +1,3 @@
-// En Input.tsx
 import React from 'react';
 import { TextInput, StyleSheet, View, Text, ViewStyle } from 'react-native';
 import { colors } from '../../styles/colors';
@@ -11,6 +10,7 @@ type InputProps = {
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'number-pad';
   error?: string;
+  editable?: boolean;
 };
 
 export const Input = ({ 
@@ -20,7 +20,8 @@ export const Input = ({
   onChangeText,
   autoCapitalize = 'sentences',
   keyboardType = 'default',
-  error
+  error,
+  editable = true
 }: InputProps) => (
   <View style={styles.container}>
     <TextInput
@@ -35,6 +36,7 @@ export const Input = ({
       onChangeText={onChangeText}
       autoCapitalize={autoCapitalize}
       keyboardType={keyboardType}
+      editable={editable} 
     />
     {error ? <Text style={styles.errorText}>{error}</Text> : null}
   </View>
