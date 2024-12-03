@@ -34,6 +34,7 @@ import { Comment } from '../comment/types';
   
   export interface PostImageProps {
     imageUrl: string;
+    mediaType: 'image' | 'video';
     postId: string;
     onLike?: (postId: string) => void;
     onExpand?: () => void;
@@ -43,15 +44,14 @@ import { Comment } from '../comment/types';
     postId: string;
     isLiked: boolean;
     isSaved: boolean;
+    commentsCount: number;
     onLikePress: (postId: string) => void;
     onCommentPress: (postId: string) => void;
     onSavePress: (postId: string) => void;
   }
   
   export interface PostDescriptionProps {
-    username: string;
     description: string;
     likesCount: number;
-    commentsCount: number;
     onUserPress?: (userId: string) => void;
   }

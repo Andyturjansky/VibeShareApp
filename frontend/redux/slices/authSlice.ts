@@ -56,7 +56,7 @@ export const login = createAsyncThunk<AuthResponse, LoginCredentials>(
         user: {
           id: response.user.id,
           email: response.user.email,
-          token: response.token,
+          //token: response.token,
           username: response.user.username,
           firstName: response.user.name,
           lastName: response.user.surname,
@@ -75,7 +75,6 @@ export const logout = createAsyncThunk<void, void>(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
-      // Aquí podríamos agregar la llamada a la API si es necesario
       // await authApi.logout();
       return;
     } catch (error) {
@@ -88,11 +87,11 @@ export const deleteAccount = createAsyncThunk<void, void>(
   'auth/deleteAccount',
   async (_, { rejectWithValue }) => {
     try {
-      // Aquí podríamos agregar la llamada a la API si es necesario
       // await authApi.deleteAccount();
+      //await authStorage.clearAuth(); 
       return;
-    } catch (error) {
-      return rejectWithValue('Failed to delete account');
+    } catch (error : any) {
+      return rejectWithValue(error.response?.data?.error || 'Failed to delete account');
     }
   }
 );
@@ -134,7 +133,7 @@ export const verifyCode = createAsyncThunk<AuthResponse, { emailOrUsername: stri
         user: {
           id: response.user.id,
           email: response.user.email,
-          token: response.token,
+          //token: response.token,
           username: response.user.username,
           firstName: response.user.name,
           lastName: response.user.surname,
@@ -145,6 +144,31 @@ export const verifyCode = createAsyncThunk<AuthResponse, { emailOrUsername: stri
       };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.error || 'Invalid code');
+    }
+  }
+);
+
+export const googleLogin = createAsyncThunk<AuthResponse, { token: string }>(
+  'auth/googleLogin',
+  async ({ token }, { rejectWithValue }) => {
+    try {
+      const response = await authApi.googleLogin(token);
+      console.log("Backend response:", response);
+      return {
+        user: {
+          id: response.user.id,
+          email: response.user.email,
+          username: response.user.username,
+          firstName: response.user.name,
+          lastName: response.user.surname,
+          gender: response.user.gender,
+          profilePicture: response.user.profilePicture
+        },
+        token: response.token
+      };
+    } catch (error: any) {
+      console.error('Backend error:', error); // para debugging
+      return rejectWithValue(error.message || 'Failed to login with Google');
     }
   }
 );
@@ -234,8 +258,11 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(logout.fulfilled, (state) => {
+        console.log('🔄 Iniciando logout en Redux...');
+        console.log('📝 Estado antes del logout:', state);
         authStorage.clearAuth();
-        return initialState; // Resetea todo el estado a los valores iniciales
+        console.log('✅ Logout completado en Redux');
+        return initialState;
       })
       .addCase(logout.rejected, (state, action) => {
         state.isLoading = false;
@@ -248,6 +275,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(deleteAccount.fulfilled, (state) => {
+        authStorage.clearAuth();
         return initialState; // Resetea todo el estado a los valores iniciales
       })
       .addCase(deleteAccount.rejected, (state, action) => {
@@ -268,36 +296,53 @@ const authSlice = createSlice({
         state.isLoading = false;
       })
 
-          // Send Verification Code
-    .addCase(sendVerificationCode.pending, (state) => {
-      state.isLoading = true;
-      state.error = null;
-    })
-    .addCase(sendVerificationCode.fulfilled, (state) => {
-      state.isLoading = false;
-      state.error = null;
-    })
-    .addCase(sendVerificationCode.rejected, (state, action) => {
-      state.isLoading = false;
-      state.error = action.payload as string;
-    })
+      // Send Verification Code
+      .addCase(sendVerificationCode.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(sendVerificationCode.fulfilled, (state) => {
+        state.isLoading = false;
+        state.error = null;
+      })
+      .addCase(sendVerificationCode.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
 
-    // Verify Code
-    .addCase(verifyCode.pending, (state) => {
-      state.isLoading = true;
-      state.error = null;
-    })
-    .addCase(verifyCode.fulfilled, (state, action) => {
-      state.isLoading = false;
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      authStorage.saveToken(action.payload.token);
-      authStorage.saveUser(action.payload.user);
-    })
-    .addCase(verifyCode.rejected, (state, action) => {
-      state.isLoading = false;
-      state.error = action.payload as string;
-    });
+      // Verify Code
+      .addCase(verifyCode.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(verifyCode.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        authStorage.saveToken(action.payload.token);
+        authStorage.saveUser(action.payload.user);
+      })
+      .addCase(verifyCode.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+
+      // Google sign in
+      .addCase(googleLogin.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+        authStorage.saveToken(action.payload.token);
+        authStorage.saveUser(action.payload.user);
+      })
+      .addCase(googleLogin.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Failed to login with Google';
+      });
       
   },
 });

@@ -5,7 +5,24 @@ dotenv.config();
 export const PORT = process.env.PORT || 3000;
 export const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/myapp";
 export const JWT_SECRET = process.env.JWT_SECRET || "this_is_my_secret";
-export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "208172994015-qa2omqpdao2ucm0h5906h3vakd4ioitg.apps.googleusercontent.com";
+// Client IDs de Google
+// constants/index.ts
+
+export const GOOGLE_AUTH = {
+  WEB: {
+    CLIENT_ID: process.env.GOOGLE_WEB_CLIENT_ID || "208172994015-qa2omqpdao2ucm0h5906h3vakd4ioitg.apps.googleusercontent.com",
+    CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "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"
+  },
+  IOS: {
+    CLIENT_ID: process.env.GOOGLE_IOS_CLIENT_ID || "208172994015-p954m10oc3d7u52vj9s3eavhk7i926eo.apps.googleusercontent.com"
+  },
+  ANDROID: {
+    CLIENT_ID: process.env.GOOGLE_ANDROID_CLIENT_ID || "208172994015-enmskd9colnpgps7pk2aj270n89mt6n2.apps.googleusercontent.com"
+  }
+};
+
+// ... resto de las constantes ...
+// Secret de Google (si lo necesitas)
 export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "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";
 // Autentiacación para usar con Nodemailer:
 export const EMAIL_USER= process.env.EMAIL_USER || "neobytear@gmail.com";

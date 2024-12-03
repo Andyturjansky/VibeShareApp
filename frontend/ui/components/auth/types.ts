@@ -10,7 +10,7 @@ export interface AuthState {
 export interface UserAuth {
   id: string;
   email: string;
-  token: string;
+  //token: string;
   username: string;
   firstName: string;
   lastName: string;

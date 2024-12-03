@@ -54,7 +54,7 @@ const FeedScreen = ({ navigation, onScrollPositionChange }: FeedScreenProps) => 
       
       setHasMore(response.hasMore);
     } catch (error) {
-      setError('No se pudieron cargar los posts. Por favor, intenta nuevamente.');
+      setError('No se pudieron cargar los posts.');
       console.error('Error loading posts:', error);
     }
    };

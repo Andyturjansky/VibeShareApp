@@ -8,6 +8,8 @@ interface ApiError {
 }
 
 const BASE_URL = 'http://localhost:3000';
+//const BASE_URL = 'https://backendmyapp.onrender.com';
+
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -97,7 +99,33 @@ export const authApi = {
       code
     });
     return response.data;
-  }
+  },
+
+  deleteAccount: async () => {
+    try {
+      const response = await api.delete('/user/delete');
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<ApiError>;
+        throw new Error(axiosError.response?.data?.error || 'Failed to delete account');
+      }
+      throw error;
+    }
+  },
+
+  googleLogin: async (token: string) => {
+    try {
+      const response = await api.post('/auth/googlelogin', { token });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<ApiError>;
+        throw new Error(axiosError.response?.data?.error || 'Google login failed');
+      }
+      throw error;
+    }
+  },
   
 };
 

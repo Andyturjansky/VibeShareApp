@@ -1,4 +1,3 @@
-// components/comment/index.tsx
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { CommentProps } from './types';

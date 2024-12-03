@@ -40,7 +40,7 @@ export const styles = StyleSheet.create({
     alignSelf: 'center',
     justifyContent: 'center',
   },
-  image: {
+  media: {
     width: '100%',
     height: '100%',
     borderRadius: POST_CONSTANTS.BORDER_RADIUS,

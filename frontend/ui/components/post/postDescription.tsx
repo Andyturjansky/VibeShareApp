@@ -11,10 +11,8 @@ if (Platform.OS === 'android') {
 }
 
 const PostDescription = ({
-  username,
   description,
   likesCount,
-  commentsCount,
   onUserPress,
 } : PostDescriptionProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -35,11 +33,6 @@ const PostDescription = ({
 
   const renderDescription = () => (
     <View style={styles.captionContainer}>
-      <Pressable onPress={() => onUserPress?.(username)} style={({ pressed }) => [
-        pressed ? { opacity: 0.7 } : {},
-      ]}>
-        <Text style={styles.captionUsername}>{username}</Text>
-      </Pressable>
       
       {shouldTruncate && !isExpanded ? (
         <>
@@ -67,23 +60,10 @@ const PostDescription = ({
     </View>
   );
 
-  const renderComments = () => (
-    <Pressable onPress={() => {/* Navegar a comentarios */}} style={({ pressed }) => [
-      pressed ? { opacity: 0.7 } : {},
-    ]}>
-      <Text style={styles.comments}>
-        {commentsCount === 0
-          ? 'No comments yet'
-          : ` ${commentsCount.toLocaleString()} comments`}
-      </Text>
-    </Pressable>
-  );
-
   return (
     <View style={styles.description}>
       {likesCount > 0 && renderLikes()}
       {renderDescription()}
-      {renderComments()}
     </View>
   );
 };

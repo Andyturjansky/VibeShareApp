@@ -1,17 +1,16 @@
-// components/comment/commentsBottom.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   StyleSheet, 
   Modal, 
   Text, 
   Pressable, 
-  PanResponder,
-  Animated,
-  Dimensions,
-  Keyboard,
-  Platform,
-  KeyboardAvoidingView
+  PanResponder, 
+  Animated, 
+  Dimensions, 
+  Platform, 
+  KeyboardAvoidingView,
+  Alert
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { selectPostById } from '@redux/slices/postsSlice';
@@ -19,6 +18,8 @@ import { RootState } from '@redux/store';
 import { colors } from '@styles/colors';
 import CommentList from './commentList';
 import CommentInput from './commentInput';
+import { createCommentThunk } from '@redux/thunks/commentThunks';
+import { useAppDispatch } from '@redux/hooks';
 
 interface CommentsBottomSheetProps {
   postId: string;
@@ -30,9 +31,31 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 50;
 
 const CommentsBottomSheet = ({ postId, isVisible, onClose }: CommentsBottomSheetProps) => {
+  const dispatch = useAppDispatch();
   const [panY] = useState(new Animated.Value(0));
   const [lastGestureDistance, setLastGestureDistance] = useState(0);
   const post = useSelector((state: RootState) => selectPostById(state, postId));
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleCommentSubmit = async (text: string) => {
+    if (!currentUser) {
+      Alert.alert('Error', 'You must be logged in to comment');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      await dispatch(createCommentThunk({
+        postId,
+        text
+      })).unwrap();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to post comment');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const resetPositionAnim = Animated.timing(panY, {
     toValue: 0,
@@ -63,10 +86,6 @@ const CommentsBottomSheet = ({ postId, isVisible, onClose }: CommentsBottomSheet
       }
     },
   });
-
-  const handleCommentSubmit = async (text: string) => {
-    // Aquí implementarás la lógica para agregar el comentario
-  };
 
   return (
     <Modal
@@ -108,6 +127,7 @@ const CommentsBottomSheet = ({ postId, isVisible, onClose }: CommentsBottomSheet
             <CommentInput
               postId={postId}
               onCommentSubmit={handleCommentSubmit}
+              isLoading={isSubmitting}
             />
           </Animated.View>
         </Pressable>

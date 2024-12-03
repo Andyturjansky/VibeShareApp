@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, Image, StyleSheet, Platform, Alert, ScrollView } from 'react-native';
+import { Video, ResizeMode } from 'expo-av'; 
 import { Pressable } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { colors } from '@styles/colors';
@@ -112,7 +113,18 @@ const CreatePostScreen = () => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.mediaPreview}>
-          <Image source={{ uri: mediaUri }} style={styles.previewImage} />
+          {mediaType === 'video' ? (
+            <Video
+              source={{ uri: mediaUri }}
+              style={styles.previewImage}
+              useNativeControls
+              resizeMode={ResizeMode.COVER}
+              isLooping
+              shouldPlay={false}
+            />
+          ) : (
+            <Image source={{ uri: mediaUri }} style={styles.previewImage} />
+          )}
         </View>
 
         <View style={styles.inputContainer}>
@@ -193,6 +205,9 @@ const styles = StyleSheet.create({
   },
   mediaPreview: {
     marginBottom: 24,
+    backgroundColor: '#1C1C1E', 
+    borderRadius: 8,
+    overflow: 'hidden', 
   },
   previewImage: {
     width: '100%',

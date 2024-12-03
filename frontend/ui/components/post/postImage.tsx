@@ -1,16 +1,18 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Image, Animated, Pressable, StyleSheet, Text } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { styles } from './styles';
+import { Ionicons } from '@expo/vector-icons';
+import PostImageViewer from './postImageViewer';
 import { PostImageProps } from './types';
 import { POST_CONSTANTS, SKELETON_ANIMATION } from './constants';
-import PostImageViewer from './postImageViewer';
-import { Ionicons } from '@expo/vector-icons';
 
-const PostImage = ({ imageUrl, postId, onLike }: PostImageProps) => {
+const PostImage = ({ imageUrl, mediaType, postId, onLike, onExpand }: PostImageProps) => {
   const [isLoading, setIsLoading] = React.useState(true);
   const [hasError, setHasError] = React.useState(false);
   const [isImageViewerVisible, setIsImageViewerVisible] = React.useState(false);
   const fadeAnim = useRef(new Animated.Value(SKELETON_ANIMATION.MIN_OPACITY)).current;
+  const videoRef = useRef(null);
 
   useEffect(() => {
     let animation: Animated.CompositeAnimation;
@@ -41,26 +43,55 @@ const PostImage = ({ imageUrl, postId, onLike }: PostImageProps) => {
     };
   }, [isLoading, fadeAnim]);
 
-  const handleImageLoad = () => {
+  const handleMediaLoad = () => {
     setIsLoading(false);
   };
 
-  const handleImageError = () => {
+  const handleMediaError = () => {
     setIsLoading(false);
     setHasError(true);
   };
 
   const handleExpandPress = () => {
+    onExpand?.();
     setIsImageViewerVisible(true);
   };
 
-  const handleImagePress = () => {
-    // Implementar funcionalidad si es necesario
+  const renderMedia = () => {
+    if (mediaType === 'video') {
+      return (
+        <Video
+          ref={videoRef}
+          source={{ uri: imageUrl }}
+          style={[
+            styles.media,
+            { opacity: isLoading || hasError ? 0 : 1 }
+          ]}
+          useNativeControls
+          resizeMode={ResizeMode.COVER}
+          //isLooping
+          onLoad={handleMediaLoad}
+          onError={handleMediaError}
+          shouldPlay={false}
+        />
+      );
+    }
+
+    return (
+      <Image
+        source={{ uri: imageUrl }}
+        style={[
+          styles.media,
+          { opacity: isLoading || hasError ? 0 : 1 }
+        ]}
+        onLoad={handleMediaLoad}
+        onError={handleMediaError}
+      />
+    );
   };
 
   return (
     <View>
-      <Pressable onPress={handleImagePress}>
         <View style={styles.imageContainer}>
           {isLoading && (
             <Animated.View
@@ -73,20 +104,12 @@ const PostImage = ({ imageUrl, postId, onLike }: PostImageProps) => {
             />
           )}
 
-          <Image
-            source={{ uri: imageUrl }}
-            style={[
-              styles.image,
-              { opacity: isLoading || hasError ? 0 : 1 }
-            ]}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-          />
+          {renderMedia()}
 
           {hasError && (
             <View style={additionalStyles.errorContainer}>
               <Text style={additionalStyles.errorText}>
-                Unable to load post
+                Unable to load {mediaType}
               </Text>
             </View>
           )}
@@ -99,10 +122,10 @@ const PostImage = ({ imageUrl, postId, onLike }: PostImageProps) => {
             <Ionicons name="expand-outline" size={24} color="#FFFFFF" />
           </Pressable>  
         </View>
-      </Pressable>
 
       <PostImageViewer
         imageUrl={imageUrl}
+        mediaType={mediaType}
         isVisible={isImageViewerVisible}
         onClose={() => setIsImageViewerVisible(false)}
       />
@@ -131,7 +154,7 @@ const additionalStyles = StyleSheet.create({
     position: 'absolute',
     bottom: 12,
     right: 12,
-    backgroundColor: 'B5B5B5',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 8,
     padding: 8,
     zIndex: 1,

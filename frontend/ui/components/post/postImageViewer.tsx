@@ -1,9 +1,11 @@
 import React from 'react';
 import { Modal, View, Image, Pressable, StyleSheet, SafeAreaView, Dimensions } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 
 interface PostImageViewerProps {
   imageUrl: string;
+  mediaType: 'image' | 'video';
   isVisible: boolean;
   onClose: () => void;
 }
@@ -12,6 +14,7 @@ const { width, height } = Dimensions.get('window');
 
 const PostImageViewer = ({
   imageUrl,
+  mediaType,
   isVisible,
   onClose,
 } : PostImageViewerProps) => {
@@ -32,11 +35,22 @@ const PostImageViewer = ({
         </Pressable>
         
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: imageUrl }}
-            style={styles.fullImage}
-            resizeMode="contain"
-          />
+          {mediaType === 'video' ? (
+            <Video
+              source={{ uri: imageUrl }}
+              style={styles.fullImage}
+              useNativeControls
+              resizeMode={ResizeMode.CONTAIN}
+              //isLooping
+              shouldPlay={true}
+            />
+          ) : (
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.fullImage}
+              resizeMode="contain"
+            />
+          )}
         </View>
       </SafeAreaView>
     </Modal>

@@ -1,5 +1,5 @@
 export interface BaseUser {
     id: string;
     username: string;
-    profilePicture: string;
+    profilePicture: string | null;
   }

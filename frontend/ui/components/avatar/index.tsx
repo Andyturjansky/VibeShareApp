@@ -1,43 +1,47 @@
-import React, { FC, useState } from 'react';
-import { View, Image, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { createStyles } from './styles';
 import { AvatarProps } from './types';
 import { AVATAR_SIZES } from './constants';
 
-export const DEFAULT_AVATAR_URL = require('@assets/images/profilePic.png'); // Profile pic predeterminada
+export const DEFAULT_AVATAR_URL = require('@assets/images/profilePic.png');
 
 export const Avatar = ({
   size = 'medium',
   imageUrl,
   onPress,
   showBorder = false,
-} : AvatarProps) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const [isPressed, setIsPressed] = useState(false); // Nuevo estado para manejar la opacidad
+}: AvatarProps) => {
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [hasError, setHasError] = React.useState(false);
 
-  const styles = createStyles({
-    size: AVATAR_SIZES[size],
-    showBorder,
-  });
+  // Reset error state when imageUrl changes
+  React.useEffect(() => {
+    setHasError(false);
+  }, [imageUrl]);
+
+  const styles = React.useMemo(
+    () =>
+      createStyles({
+        size: AVATAR_SIZES[size],
+        showBorder,
+      }),
+    [size, showBorder]
+  );
 
   const content = (
     <View style={styles.container}>
-      {imageUrl && !hasError ? (
-        <Image
-          source={{ uri: imageUrl }}
-          style={styles.image}
-          onLoadStart={() => setIsLoading(true)}
-          onLoadEnd={() => setIsLoading(false)}
-          onError={() => setHasError(true)}
-        />
-      ) : (
-        <Image
-        source={DEFAULT_AVATAR_URL } // Imagen predeterminada
+      <Image
+        source={imageUrl && !hasError ? { uri: imageUrl } : DEFAULT_AVATAR_URL}
         style={styles.image}
+        transition={200}
+        contentFit="cover"
+        onLoadStart={() => setIsLoading(true)}
+        onLoadEnd={() => setIsLoading(false)}
+        onError={() => setHasError(true)}
       />
-      )}
-      {isLoading && (
+      {isLoading && imageUrl && (
         <ActivityIndicator
           style={StyleSheet.absoluteFill}
           color="#666"
@@ -49,11 +53,10 @@ export const Avatar = ({
 
   if (onPress) {
     return (
-      <Pressable 
-        onPressIn={() => setIsPressed(true)} 
-        onPressOut={() => setIsPressed(false)} 
+      <Pressable
         onPress={onPress}
-        style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
+        style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}
+      >
         {content}
       </Pressable>
     );

@@ -1,4 +1,3 @@
-// components/comment/commentList.tsx
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, ListRenderItem } from 'react-native';
 import { Comment, CommentListProps } from './types';

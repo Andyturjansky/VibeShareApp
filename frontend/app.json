@@ -12,21 +12,35 @@
       "backgroundColor": "#141414"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vibeshare.app",
+      "config": {
+        "googleSignIn": {
+          "reservedClientId": "com.googleusercontent.apps.208172994015-p954m10oc3d7u52vj9s3eavhk7i926eo"
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#141414"
-      }
+      },
+      "package": "com.vibeshare.app",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "favicon": "./assets/images/adaptive-icon.png"
+      "favicon": "./assets/images/adaptive-icon.png",
+      "config": {
+        "googleSignIn": {
+          "clientId": "208172994015-qa2omqpdao2ucm0h5906h3vakd4ioitg.apps.googleusercontent.com"
+        }
+      }
     },
+    "scheme": "vibeshare",
     "plugins": [
       "expo-font",
       [
-      "expo-image-picker",
+        "expo-image-picker",
         {
           "photosPermission": "The app accesses your photos to let you share them with your friends.",
           "cameraPermission": "The app accesses your camera to let you share photos with your friends."

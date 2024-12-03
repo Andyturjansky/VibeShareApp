@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { View, Animated, StyleSheet } from 'react-native';
+import { View, Animated, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './styles';
 import { PostActionsProps } from './types';
@@ -10,6 +10,7 @@ const PostActions = ({
   postId,
   isLiked,
   isSaved,
+  commentsCount,
   onLikePress,
   onCommentPress,
   onSavePress,
@@ -61,19 +62,26 @@ const PostActions = ({
           </Pressable>
         </Animated.View>
 
-        <Pressable 
-          onPress={() => onCommentPress?.(postId)}
-          style={({ pressed }) => [
-            additionalStyles.actionButton,
-            pressed ? { opacity: 0.7 } : {},
-          ]}
-        >
-          <Ionicons 
-            name="chatbubble-outline"
-            size={24}
-            color="#F0F0F0"
-          />
-        </Pressable>
+
+        <View style={additionalStyles.commentContainer}>
+          <Pressable 
+            onPress={() => onCommentPress?.(postId)}
+            style={({ pressed }) => [
+              additionalStyles.actionButton,
+              pressed ? { opacity: 0.7 } : {},
+            ]}
+          >
+            <Ionicons 
+              name="chatbubble-outline"
+              size={24}
+              color="#F0F0F0"
+            />
+          </Pressable>
+          <Text style={additionalStyles.commentCount}>
+            {commentsCount === 0 ? 'No comments yet' : `${commentsCount.toLocaleString()} comments`}
+          </Text>
+        </View>
+      
       </View>
 
       <Animated.View style={{ transform: [{ scale: saveScale }] }}>
@@ -97,8 +105,17 @@ const PostActions = ({
 
 const additionalStyles = StyleSheet.create({
   actionButton: {
-    marginRight: POST_CONSTANTS.SPACING * 2,
+    marginRight: 4,
     padding: 4,
+  },
+  commentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  commentCount: {
+    color: '#F0F0F0',
+    fontSize: 14,
+    marginLeft: 1,
   },
 });
 

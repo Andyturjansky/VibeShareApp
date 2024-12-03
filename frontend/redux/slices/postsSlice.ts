@@ -56,6 +56,25 @@ const postsSlice = createSlice({
       if (post) {
         post.isSaved = !post.isSaved;
       }
+    },
+    updatePost: (state, action: PayloadAction<Post>) => {
+      const index = state.posts.findIndex(p => p.id === action.payload.id);
+      if (index !== -1) {
+        const updatedPost = {
+          ...action.payload,
+          comments: action.payload.comments.map(comment => ({
+            id: comment.id,
+            text: comment.text,
+            createdAt: comment.createdAt,
+            user: {
+              id: comment.user.id,
+              username: comment.user.username,
+              profilePicture: null 
+            }
+          }))
+        };
+        state.posts[index] = updatedPost as Post; 
+      }
     }
   },
 });
@@ -68,7 +87,8 @@ export const {
   setLoading, 
   setError,
   toggleLike,
-  toggleSave
+  toggleSave,
+  updatePost
 } = postsSlice.actions;
 
 // Selectors

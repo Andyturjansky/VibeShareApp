@@ -63,7 +63,8 @@ export const createPost = async (req: Request, res: Response): Promise<void> => 
 export const getAllPosts = async (req: Request, res: Response) => {
   try {
     const posts = await PostModel.find()
-      .populate("user", "username") // Obtenemos todos los posts y poblamos el campo de usuario
+      .populate("user", "username profilePicture") // Obtenemos todos los posts y poblamos el campo de usuario
+      .populate('comments.user', 'username') // Añadir esta línea
       .sort({ date: -1 }); // Ordenamos por fecha de manera descendente (de más nuevo a más viejo)
       
     res.status(200).json(posts);  // Enviamos los posts en la respuesta
@@ -76,7 +77,7 @@ export const getAllPosts = async (req: Request, res: Response) => {
 export const getPostById = async (req: Request, res: Response): Promise<void> => {
   try {
     const postId = req.params.id;
-    const post = await PostModel.findById(postId).populate("user", "username");
+    const post = await PostModel.findById(postId).populate("user", "username profilePicture");
     if (!post) {
       res.status(404).json({ message: "Post no encontrado" });
       return
@@ -99,7 +100,7 @@ export const getPostsByUserId = async (req: Request, res: Response): Promise<voi
 
     const userId = user.id;
     const posts = await PostModel.find({ user: userId }) // Buscamos los posts del usuario
-      .populate("user", "username") // Poblamos el campo de usuario
+      .populate("user", "username profilePicture") // Poblamos el campo de usuario
       .sort({ date: -1 }); // Ordenamos por fecha de manera descendente
 
     res.status(200).json(posts); // Enviamos los posts en la respuesta

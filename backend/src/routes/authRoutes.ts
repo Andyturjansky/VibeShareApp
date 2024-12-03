@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login, sendVerificationCode, loginWithCode,updatePassword } from "../controllers/authController";
+import { register, login, sendVerificationCode, loginWithCode, updatePassword } from "../controllers/authController";
 import { googleLogin } from "../controllers/authControllerGoogle";
 const router = Router();
 import multer from 'multer';

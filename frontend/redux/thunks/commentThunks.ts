@@ -1,35 +1,28 @@
 // redux/thunks/commentThunks.ts
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { Comment } from '@components/comment/types';
-import { addComment, setError } from '@redux/slices/postsSlice';
+import { addComment as addCommentApi } from '@networking/api/comments';
+import { updatePost, setError } from '@redux/slices/postsSlice';
+import { transformPost } from '@networking/api/feed'; // Importar la función de transformación
 
-// Simular una llamada a API
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-export const createComment = createAsyncThunk(
+export const createCommentThunk = createAsyncThunk(
   'posts/createComment',
   async (
-    { postId, text, user }: { postId: string; text: string; user: Comment['user'] },
+    { postId, text }: { postId: string; text: string },
     { dispatch }
   ) => {
     try {
-      // Simular llamada API
-      await delay(1000);
+      const response = await addCommentApi(postId, text);
       
-      // Crear nuevo comentario
-      const newComment: Comment = {
-        id: Date.now().toString(),
-        user,
-        text,
-        createdAt: new Date().toISOString(),
-      };
-
-      // Actualizar estado
-      dispatch(addComment({ postId, comment: newComment }));
+      // Transformamos el post al formato que espera el frontend
+      const transformedPost = transformPost(response.post);
       
-      return newComment;
+      // Actualizamos el post en el estado
+      dispatch(updatePost(transformedPost));
+      
+      return transformedPost;
     } catch (error) {
-      dispatch(setError(error instanceof Error ? error.message : 'Error creating comment'));
+      const errorMessage = error instanceof Error ? error.message : 'Error creating comment';
+      dispatch(setError(errorMessage));
       throw error;
     }
   }

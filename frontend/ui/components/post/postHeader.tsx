@@ -23,7 +23,7 @@ const PostHeader = ({
         <Pressable onPress={handleUserPress} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
           <Avatar 
             size="small" 
-            imageUrl={user.profilePicture}
+            imageUrl={user.profilePicture || undefined}
             onPress={handleUserPress}
           />
         </Pressable>

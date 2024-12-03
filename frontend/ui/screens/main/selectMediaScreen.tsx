@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, Pressable, Platform } from 'react-native';
+import { Video, ResizeMode } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -114,7 +115,18 @@ const SelectMediaScreen = () => {
 
       <View style={styles.mediaContainer}>
         {selectedMedia ? (
-          <Image source={{ uri: selectedMedia }} style={styles.selectedImage} />
+          mediaType === 'video' ? (
+            <Video
+              source={{ uri: selectedMedia }}
+              style={styles.selectedMedia}
+              useNativeControls
+              resizeMode={ResizeMode.CONTAIN}
+              isLooping
+              shouldPlay={false}
+            />
+          ) : (
+            <Image source={{ uri: selectedMedia }} style={styles.selectedMedia} />
+          )
         ) : (
           <Text style={styles.placeholderText}>Select an image or video</Text>
         )}
@@ -180,7 +192,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  selectedImage: {
+  selectedMedia: {
     width: '100%',
     height: '100%',
     resizeMode: 'contain',

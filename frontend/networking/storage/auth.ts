@@ -46,9 +46,19 @@ export const authStorage = {
   // Limpiar datos de autenticación
   clearAuth: async (): Promise<void> => {
     try {
+      console.log('🔄 Iniciando limpieza de credenciales...');
+      const beforeToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      const beforeUser = await AsyncStorage.getItem(USER_DATA_KEY);
+      console.log('📝 Antes de limpiar:', { token: beforeToken, user: beforeUser });
+  
       await AsyncStorage.multiRemove([AUTH_TOKEN_KEY, USER_DATA_KEY]);
+      
+      const afterToken = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+      const afterUser = await AsyncStorage.getItem(USER_DATA_KEY);
+      console.log('📝 Después de limpiar:', { token: afterToken, user: afterUser });
+      console.log('✅ Credenciales eliminadas exitosamente');
     } catch (error) {
-      console.error('Error clearing auth data:', error);
+      console.error('❌ Error clearing auth data:', error);
     }
   }
 };

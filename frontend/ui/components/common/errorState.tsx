@@ -31,13 +31,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: colors.text.white,
+    backgroundColor: colors.text.grey,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   retryText: {
-    color: colors.text.white,
+    color: colors.text.black,
     fontSize: 14,
     fontWeight: '600',
   },

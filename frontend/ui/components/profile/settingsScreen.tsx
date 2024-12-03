@@ -3,9 +3,8 @@ import { View, Text, StyleSheet, Alert } from 'react-native';
 import { Pressable } from 'react-native';
 import { colors } from '@styles/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { logout, deleteAccount } from '@redux/slices/authSlice';
 import { useAuth } from '@context/auth';
- 
+
 interface SettingItemProps {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
@@ -48,10 +47,12 @@ const SettingItem = ({
 );
 
 export const SettingsScreen = () => {
-  const dispatch = useAuth();
+  const { logout, deleteAccount } = useAuth(); 
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogout = useCallback(async () => {
+    if (isLoading) return; 
+
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',
@@ -65,10 +66,11 @@ export const SettingsScreen = () => {
           onPress: async () => {
             setIsLoading(true);
             try {
+              console.log('🔄 Iniciando proceso de logout...');
               await logout();
-              // La navegación la maneja automáticamente el AuthNavigator
+              console.log('✅ Logout completado exitosamente');
             } catch (error) {
-              console.error('Error during logout:', error);
+              console.error('❌ Error durante logout:', error);
               Alert.alert('Error', 'Failed to logout. Please try again.');
             } finally {
               setIsLoading(false);
@@ -77,9 +79,9 @@ export const SettingsScreen = () => {
           style: 'destructive',
         },
       ],
-      { cancelable: true }
+      { cancelable: !isLoading }  
     );
-  }, [logout]);
+  }, [logout, isLoading]);
 
   const handleDeleteAccount = useCallback(() => {
     Alert.alert(
@@ -96,7 +98,6 @@ export const SettingsScreen = () => {
             setIsLoading(true);
             try {
               await deleteAccount();
-              // La navegación se manejará automáticamente por el AuthNavigator
             } catch (error) {
               console.error('Error deleting account:', error);
               Alert.alert('Error', 'Failed to delete account. Please try again.');
@@ -109,7 +110,7 @@ export const SettingsScreen = () => {
       ],
       { cancelable: true }
     );
-  }, [deleteAccount()]);
+  }, [deleteAccount]);
 
   return (
     <View style={styles.container}>

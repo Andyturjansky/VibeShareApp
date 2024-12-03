@@ -25,6 +25,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 export const RootNavigator = () => {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  //const isAuthenticated = true;
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {

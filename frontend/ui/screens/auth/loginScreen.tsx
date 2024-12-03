@@ -10,11 +10,15 @@ import { Button } from '@components/common/button';
 import { Logo } from '@components/common/logo';
 import { colors } from '@styles/colors';
 import { useAppDispatch } from '@redux/hooks';
-import { login } from '@redux/slices/authSlice';
+import { login, googleLogin } from '@redux/slices/authSlice';
 import { LoginCredentials } from '@components/auth/types';
 import googleIcon from '@assets/icons/btn_google/web_dark_sq_ctn.svg';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList & RootStackParamList>;
+
+WebBrowser.maybeCompleteAuthSession(); 
 
 export const LoginScreen = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -24,6 +28,12 @@ export const LoginScreen = () => {
   //const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: "208172994015-qa2omqpdao2ucm0h5906h3vakd4ioitg.apps.googleusercontent.com",
+    iosClientId: "208172994015-p954m10oc3d7u52vj9s3eavhk7i926eo.apps.googleusercontent.com",
+    androidClientId: "208172994015-enmskd9colnpgps7pk2aj270n89mt6n2.apps.googleusercontent.com",
+    scopes: ['profile', 'email']
+  });
 
   const handleLogin = async () => {
     try {
@@ -48,6 +58,60 @@ export const LoginScreen = () => {
     } catch (error: any) {
       setError(error?.message || 'Failed to login');
       console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const result = await promptAsync();
+      console.log("Google result:", result);
+  
+      if (result?.type === 'success') {
+        // Obtener el token directamente de la autenticación
+        const { authentication } = result;
+        if (!authentication) {
+          throw new Error('No authentication data received');
+        }
+  
+        const { accessToken } = authentication;
+        
+        try {
+          // Obtener información del usuario de Google
+          const userInfoResponse = await fetch(
+            'https://www.googleapis.com/oauth2/v3/userinfo',
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            }
+          );
+          
+          if (!userInfoResponse.ok) {
+            throw new Error('Failed to get user info from Google');
+          }
+  
+          const googleUser = await userInfoResponse.json();
+          console.log("Google user info:", googleUser);
+  
+          // Usar el ID de Google como token
+          await dispatch(googleLogin({ token: accessToken })).unwrap();
+          
+        } catch (error) {
+          console.error('Error fetching Google user info:', error);
+          setError('Failed to get user information from Google');
+        }
+      } else if (result?.type === 'error') {
+        console.error('Google Sign In Error:', result.error);
+        setError(result.error?.message || 'Google sign in failed');
+      } else {
+        setError('Google sign in was cancelled');
+      }
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      setError(error?.message || 'Failed to login with Google');
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +177,7 @@ export const LoginScreen = () => {
           <Button 
             title="Continue with Google" 
             variant="black" 
-            onPress={() => {/* Handle Google login */}}
+            onPress={handleGoogleLogin}
             disabled={isLoading}
           />
         </View>

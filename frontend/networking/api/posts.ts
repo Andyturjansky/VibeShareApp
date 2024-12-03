@@ -44,7 +44,7 @@ interface CreatePostParams {
 const transformUser = (userAuth: UserAuth): BaseUser => ({
   id: userAuth.id,
   username: userAuth.username,
-  profilePicture: userAuth.profilePicture || 'https://via.placeholder.com/150'
+  profilePicture: userAuth.profilePicture || null
 });
 
 const uploadMedia = async (mediaUri: string): Promise<UploadMediaResponse> => {
@@ -60,7 +60,7 @@ const uploadMedia = async (mediaUri: string): Promise<UploadMediaResponse> => {
     formData.append('media', file as any);
 
     const response = await api.post<UploadMediaResponse>(
-      '/posts/upload', // Nota: removido el slash inicial ya que baseURL ya lo incluye
+      '/posts/upload', 
       formData,
       {
         headers: {

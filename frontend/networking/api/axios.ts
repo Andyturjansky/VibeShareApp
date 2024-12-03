@@ -5,6 +5,7 @@ import { authStorage } from '../storage/auth';
 const api = axios.create({
   baseURL: 'http://localhost:3000/api',
   //baseURL: 'http://192.168.0.241:3000/api'
+  //baseURL: 'https://backendmyapp.onrender.com/api'
 });
 
 // Interceptor para añadir el token a todas las peticiones
@@ -33,7 +34,7 @@ api.interceptors.response.use(
     // Si el error es 401 (no autorizado), podríamos manejar el refresh token aquí
     if (error.response?.status === 401) {
       console.log('Token expired or invalid');
-      // Aquí podrías implementar la lógica de refresh token
+      // Aca va la lógica de refresh token
     }
     return Promise.reject(error);
   }

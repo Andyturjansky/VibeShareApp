@@ -1,6 +1,7 @@
 import api from './axios';
 import { Post } from '@components/post/types';
 import { BaseBackendPost } from './posts';
+import { transformComment } from './comments'
 
 interface FeedResponse {
  posts: Post[];
@@ -10,12 +11,12 @@ interface FeedResponse {
 
 const POSTS_PER_PAGE = 10;
 
-const transformPost = (backendPost: BaseBackendPost): Post => ({
+export const transformPost = (backendPost: BaseBackendPost): Post => ({
  id: backendPost._id,
  user: {
    id: backendPost.user._id,
    username: backendPost.user.username,
-   profilePicture: backendPost.user.profilePicture || 'https://via.placeholder.com/150'
+   profilePicture: backendPost.user.profilePicture || null
   },
  imageUrl: backendPost.media[0]?.url || '',
  location: backendPost.location,
@@ -25,7 +26,7 @@ const transformPost = (backendPost: BaseBackendPost): Post => ({
  isSaved: false, // Se implementará después
  createdAt: backendPost.date,
  commentsCount: backendPost.comments.length,
- comments: [], // Se implementará después
+ comments: backendPost.comments.map(transformComment),
  mediaType: backendPost.media[0]?.type as 'image' | 'video' || 'image'
 });
 

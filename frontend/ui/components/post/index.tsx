@@ -38,6 +38,7 @@ const Post = ({
 
       <PostImage
         imageUrl={post.imageUrl}
+        mediaType={post.mediaType}
         postId={post.id}  
         onLike={handleImageLike}  
         onExpand={handleImagePress}  
@@ -47,16 +48,15 @@ const Post = ({
         postId={post.id}
         isLiked={post.isLiked}
         isSaved={post.isSaved}
+        commentsCount={post.commentsCount}
         onLikePress={onLikePress || (() => {})}
         onCommentPress={handleCommentPress}
         onSavePress={onSavePress || (() => {})}
       />
 
       <PostDescription
-        username={post.user.username}
         description={post.description}
         likesCount={post.likesCount}
-        commentsCount={post.commentsCount}
         onUserPress={onUserPress}
       />
     </View>
