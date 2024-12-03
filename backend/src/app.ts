@@ -15,7 +15,7 @@ app.use(express.json());
 app.use("/auth", authRouter);
 
 // Rutas de posts
-app.use("/api", postRouter);
+app.use("/posts", postRouter);
 
 //Rutas users
 app.use("/user",userRouter);

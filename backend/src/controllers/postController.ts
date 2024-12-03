@@ -3,6 +3,8 @@ import PostModel from "../models/postModel";;
 import { JwtPayload } from "jsonwebtoken";
 import cloudinary from "../constants/index";
 import mongoose from "mongoose";
+import User from "../models/userModel";
+import Post from "../models/postModel";
 
 // Controlador para subir una imagen o video a Cloudinary
 export const uploadMedia = async (req: Request, res: Response): Promise<void> => {
@@ -69,6 +71,37 @@ export const getAllPosts = async (req: Request, res: Response) => {
     res.status(200).json(posts);  // Enviamos los posts en la respuesta
   } catch (error) {
     res.status(500).json({ error: "Error al obtener los posts" });
+  }
+};
+// Controlador para traer los post de users a los cuales sigo
+export const getFollowingPosts = async (req: Request, res: Response) => {
+  try {
+    // Verifica si el middleware de autenticación agregó `req.user`
+    const userId = req.user?.id; // `id` fue definido en el token
+
+    if (!userId) {
+      res.status(401).json({ error: "Usuario no autenticado" });
+      return 
+    }
+
+    // Busca al usuario autenticado para obtener su lista de `following`
+    const user = await User.findById(userId).select("following");
+    if (!user) {
+      res.status(404).json({ error: "Usuario no encontrado" });
+      return 
+    }
+
+    // Busca posts de los usuarios que sigue
+    const posts = await Post.find({ user: { $in: user.following } })
+      .populate("user", "username") // Poblamos el campo de usuario con el username
+      .sort({ date: -1 }); // Ordenamos por fecha descendente
+
+    res.status(200).json(posts);
+    return 
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al obtener los posts" });
+    return 
   }
 };
 
@@ -139,53 +172,79 @@ export const deletePost = async (req: Request, res: Response): Promise<void> => 
     }
   };
 
-// Controlador para dar like a un post
-
-
-export const toggleLike = async (req: Request, res: Response): Promise<void> => {
-  const { postId } = req.body;
-  const userId = req.user?.id;
-
-  if (!postId || !userId) {
-    res.status(400).json({ message: "Faltan datos requeridos" });
-    return;
-  }
+  export const toggleLike = async (req: Request, res: Response): Promise<void> => {
+    const { postId } = req.body;
+    const userId = req.user?.id; // Asegúrate de que req.user tenga id
+  
+    if (!postId || !userId) {
+      res.status(400).json({ message: "Faltan datos requeridos" });
+      return;
+    }
+  
+    try {
+      const post = await PostModel.findById(postId);
+  
+      if (!post) {
+        res.status(404).json({ message: "Post no encontrado" });
+        return;
+      }
+  
+      const user = await User.findById(userId);
+      if (!user) {
+        res.status(404).json({ message: "Usuario no encontrado" });
+        return;
+      }
+  
+      const username = user.username;
+  
+      // Verifica si el usuario ya ha dado like
+      const userHasLiked = post.likes.some(
+        (like) => like.userId.toString() === userId.toString() // Cambiado a userId
+      );
+  
+      if (userHasLiked) {
+        // Si ya ha dado like, lo eliminamos
+        post.likes = post.likes.filter(
+          (like) => like.userId.toString() !== userId.toString() // Cambiado a userId
+        );
+        post.likeCount -= 1;
+        await post.save();
+        res.status(200).json({ message: "Like eliminado", likeCount: post.likeCount });
+      } else {
+        // Si no ha dado like, lo agregamos con userId y username
+        post.likes.push({ userId, username });
+        post.likeCount += 1;
+        await post.save();
+        res.status(200).json({ message: "Like agregado", likeCount: post.likeCount });
+      }
+    } catch (error) {
+      console.error("Error al actualizar like:", error);
+      res.status(500).json({ error: "Error al actualizar like", details: error });
+    }
+  };
+  
+// Servicio para contar los likes de un post
+export const countLikes = async (req: Request, res: Response): Promise<void> => {
+  const { postId } = req.params;  // Recibimos el postId desde los parámetros de la URL
 
   try {
-    const post = await PostModel.findById(postId);
+    // Buscar el post en la base de datos por su ID
+    const post = await Post.findById(postId);
 
+    // Si el post no existe, respondemos con un error
     if (!post) {
       res.status(404).json({ message: "Post no encontrado" });
       return;
     }
 
-    // Verifica si `userId` es válido y crea el ObjectId correctamente
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      res.status(400).json({ message: "ID de usuario no válido" });
-      return;
-    }
+    // Contamos la cantidad de likes
+    const likeCount = post.likes.length;
 
-    const userObjectId = userId as unknown as mongoose.Schema.Types.ObjectId;
-
-    // Verifica si el usuario ya ha dado like
-    const userHasLiked = post.likes.some((like) => like.toString() === userObjectId.toString());
-
-    if (userHasLiked) {
-      // Si ya ha dado like, lo eliminamos
-      post.likes = post.likes.filter((like) => like.toString() !== userObjectId.toString());
-      post.likeCount -= 1;
-      await post.save();
-      res.status(200).json({ message: "Like eliminado", likeCount: post.likeCount });
-    } else {
-      // Si no ha dado like, lo agregamos
-      post.likes.push(userObjectId);
-      post.likeCount += 1;
-      await post.save();
-      res.status(200).json({ message: "Like agregado", likeCount: post.likeCount });
-    }
+    // Respondemos con la cantidad de likes
+    res.status(200).json({ likeCount });
   } catch (error) {
-    console.error("Error al actualizar like:", error);
-    res.status(500).json({ error: "Error al actualizar like", details: error });
+    console.error("Error al contar likes:", error);
+    res.status(500).json({ error: "Error al contar los likes", details: error });
   }
 };
 

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { searchUsers, addPostToFavorites, removePostFromFavorites, getUserFavorites, updateUserProfile, getUserFollowing, followUser, unfollowUser, getUserFollowers, getAllUsers, getUserById, uploadProfilePicture, uploadCoverPicture } from "../controllers/userController";
+import { getUserStats, deleteAccount, searchUsers, addPostToFavorites, removePostFromFavorites, getUserFavorites, updateUserProfile, getUserFollowing, followUser, unfollowUser, getUserFollowers, getAllUsers, getUserById, uploadProfilePicture, uploadCoverPicture } from "../controllers/userController";
 import { validateJwt } from "../middlewares/auth";
 import multer from "multer";
 
@@ -24,18 +24,24 @@ router.post("/profile-picture", validateJwt, upload.single("profilePicture"), up
 router.post("/cover-picture", validateJwt, upload.single("coverPicture"), uploadCoverPicture);
 
 // Ruta para seguir a un usuario
-router.post("/:id/follow", validateJwt, followUser);
+router.post("/follow/:username", validateJwt, followUser);
 //Para dejar de seguir a un usuario
-router.post("/:id/unfollow", validateJwt, unfollowUser);
+router.post("/unfollow/:username", validateJwt, unfollowUser);
 
 //traer el listado de seguidores que tiene un usuario 
-router.get("/:id/followers", validateJwt, getUserFollowers);
+router.get("/followers/:username", validateJwt, getUserFollowers);
 
 // Ruta para obtener las personas que sigue un usuario específico por ID
-router.get("/:id/following", getUserFollowing);
+router.get("/following/:username", validateJwt, getUserFollowing);
 
 
 router.post("/favorites/:postId", validateJwt, addPostToFavorites); // Agregar post a favoritos
 router.delete("/favorites/:postId", validateJwt, removePostFromFavorites); // Quitar post de favoritos
-router.get("/favorites/:userId", validateJwt, getUserFavorites); // Trae los favoritos de un usuario específico
+router.get("/favorites/:username", validateJwt, getUserFavorites); // Trae los favoritos de un usuario específico
+
+// Ruta para eliminar la cuenta de un usuario
+router.delete("/deleteAccount", validateJwt, deleteAccount);
+
+router.get("/stats/:username", validateJwt, getUserStats);
+
 export default router;
