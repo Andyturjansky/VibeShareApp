@@ -11,6 +11,10 @@ interface IMedia {
   url: string;         // URL del archivo
   public_id?: string;  // ID del archivo en Cloudinary (opcional)
 }
+interface ILike {
+  userId: mongoose.Schema.Types.ObjectId;
+  username: string;
+}
 
 interface IPost extends Document {
   user: mongoose.Schema.Types.ObjectId;
@@ -19,7 +23,7 @@ interface IPost extends Document {
   location: string;
   media: IMedia[];
   comments: IComment[];
-  likes: mongoose.Schema.Types.ObjectId[];
+  likes: ILike[];
   likeCount: number;
 }
 
@@ -42,7 +46,12 @@ const postSchema: Schema = new Schema({
       date: { type: Date, default: Date.now },
     },
   ],
-  likes: { type: [mongoose.Schema.Types.ObjectId], ref: "User ", default: [] },
+  likes: [
+    {
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+      username: { type: String, required: true },
+    },
+  ],
   likeCount: { type: Number, default: 0 },
 });
 

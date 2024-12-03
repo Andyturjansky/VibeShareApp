@@ -35,7 +35,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         // Usar upload_stream para subir el archivo desde el buffer
         await new Promise((resolve, reject) => {
           cloudinary.uploader.upload_stream(
-            { resource_type: 'auto' },
+            { resource_type: "auto" },
             (error: any, result: any) => {
               if (error) {
                 reject(error);
@@ -64,9 +64,34 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     });
 
     await newUser.save();
-    
+
+    // Enviar correo de bienvenida
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
+      },
+    });
+
+    const welcomeMessage = `
+      <h1>¡Bienvenido a VibeShare, ${name}!</h1>
+      <p>Nos alegra mucho que te hayas unido a nuestra comunidad. Aquí puedes compartir momentos especiales, explorar contenido interesante y conectar con personas de todo el mundo.</p>
+      <p>Si tenes alguna duda, no dudes en contactarnos. ¡Disfruta de la experiencia!</p>
+      <p>El equipo de VibeShare.</p>
+    `;
+
+    await transporter.sendMail({
+      from: `"VibeShare" <${EMAIL_USER}>`,
+      to: email,
+      subject: "¡Bienvenido a VibeShare!",
+      html: welcomeMessage,
+    });
+
+    console.log(`Correo de bienvenida enviado a: ${email}`);
+
     // Generar token JWT
-    const token = jwt.sign({ id: newUser._id }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ id: newUser._id, username: newUser.username }, JWT_SECRET, { expiresIn: "1h" });
 
     // Enviar respuesta con token y datos del usuario
     res.status(201).json({
@@ -82,13 +107,11 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         gender: newUser.gender,
       },
     });
-
   } catch (error) {
     console.error("Error in user registration:", error);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
-
 
 
 
@@ -106,7 +129,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Credenciales inválidas" });
     }
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign({ id: user._id, username: user.username}, JWT_SECRET, { expiresIn: "1h" });
 
     res.status(200).json({
       token,

@@ -3,7 +3,7 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_SECRET } from "../constants";
 
 interface AuthPayload extends JwtPayload {
-  id: string; // Agrega el campo `id` que esperas en el token
+  id: string; // Agregamos el campo `id` que esperas en el token
 }
 
 // Añadir el middleware con el tipo AuthPayload

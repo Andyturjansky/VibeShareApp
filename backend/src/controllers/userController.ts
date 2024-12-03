@@ -156,22 +156,49 @@ export const uploadCoverPicture = async (req: Request, res: Response): Promise<v
 // Controlador para seguir a otro usuario
 export const followUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const userId = req.user?.id;
-    const targetUserId = req.params.id;
+    const userId = req.user?.id; // ID del usuario autenticado
+    const targetUsername = req.params.username; // Username del usuario a seguir
 
-    if (!userId || userId === targetUserId) {
-      res.status(400).json({ message: "No se puede seguir a sí mismo o no autorizado" });
+    if (!userId) {
+      res.status(401).json({ message: "Usuario no autenticado" });
       return;
     }
 
-    const user = await User.findById(targetUserId);
-    if (!user) {
+    if (!targetUsername) {
+      res.status(400).json({ message: "Username del usuario a seguir es requerido" });
+      return;
+    }
+
+    // Buscar al usuario objetivo por su username
+    const targetUser = await User.findOne({ username: targetUsername });
+    if (!targetUser) {
       res.status(404).json({ message: "Usuario a seguir no encontrado" });
       return;
     }
 
-    await User.findByIdAndUpdate(userId, { $addToSet: { following: targetUserId } });
-    res.status(200).json({ message: "Usuario seguido con éxito" });
+    if (userId === targetUser.id) {
+      res.status(400).json({ message: "No puedes seguirte a ti mismo" });
+      return;
+    }
+
+    // Agregar al usuario objetivo a la lista de "following" del usuario autenticado
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { following: targetUser.id } }, // Evitar duplicados
+      { new: true } // Devolver el documento actualizado
+    );
+
+    // Agregar al usuario autenticado a la lista de "followers" del usuario objetivo
+    await User.findByIdAndUpdate(
+      targetUser.id,
+      { $addToSet: { followers: userId } }, // Evitar duplicados
+      { new: true } // Devolver el documento actualizado
+    );
+
+    res.status(200).json({
+      message: "Usuario seguido con éxito",
+      following: updatedUser?.following,
+    });
   } catch (error) {
     res.status(500).json({ error: "Error al seguir al usuario", details: error });
   }
@@ -179,86 +206,128 @@ export const followUser = async (req: Request, res: Response): Promise<void> => 
 
 // Controlador para dejar de seguir a otro usuario
 export const unfollowUser = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const userId = req.user?.id;
-      const targetUserId = req.params.id;
-  
-      if (!userId || userId === targetUserId) {
-        res.status(400).json({ message: "No se puede dejar de seguir a sí mismo o no autorizado" });
-        return;
-      }
-  
-      const user = await User.findById(targetUserId);
-      if (!user) {
-        res.status(404).json({ message: "Usuario a dejar de seguir no encontrado" });
-        return;
-      }
-  
-      // Elimina el usuario objetivo de la lista de seguidores
-      await User.findByIdAndUpdate(userId, { $pull: { following: targetUserId } });
-      res.status(200).json({ message: "Usuario dejado de seguir con éxito" });
-    } catch (error) {
-      res.status(500).json({ error: "Error al dejar de seguir al usuario", details: error });
+  try {
+    const userId = req.user?.id; // ID del usuario autenticado
+    const targetUsername = req.params.username; // Username del usuario a dejar de seguir
+
+    if (!userId) {
+      res.status(401).json({ message: "Usuario no autenticado" });
+      return;
     }
+
+    if (!targetUsername) {
+      res.status(400).json({ message: "Username del usuario a dejar de seguir es requerido" });
+      return;
+    }
+
+    // Buscar al usuario objetivo por su username
+    const targetUser = await User.findOne({ username: targetUsername });
+    if (!targetUser) {
+      res.status(404).json({ message: "Usuario a dejar de seguir no encontrado" });
+      return;
+    }
+
+    if (userId === targetUser.id) {
+      res.status(400).json({ message: "No puedes dejar de seguirte a ti mismo" });
+      return;
+    }
+
+    // Eliminar al usuario objetivo de la lista de "following" del usuario autenticado
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $pull: { following: targetUser.id } },
+      { new: true } // Devolver el documento actualizado
+    );
+
+    // Eliminar al usuario autenticado de la lista de "followers" del usuario objetivo
+    await User.findByIdAndUpdate(
+      targetUser.id,
+      { $pull: { followers: userId } },
+      { new: true } // Devolver el documento actualizado
+    );
+
+    res.status(200).json({
+      message: "Usuario dejado de seguir con éxito",
+      following: updatedUser?.following,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Error al dejar de seguir al usuario", details: error });
+  }
 };
+
 
 //trae a las personas que un usuario sigue
 export const getUserFollowers = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const targetUserId = req.params.id; // Obtén el ID del usuario cuya lista de seguidores deseas consultar
-  
-      // Verifica si el ID del usuario está presente
-      if (!targetUserId) {
-        res.status(400).json({ message: "ID del usuario es necesario" });
-        return;
-      }
-  
-      // Busca todos los usuarios que tienen al `targetUserId` en su lista de 'followers'
-      const followers = await User.find({ followers: targetUserId }).select("name username");
-  
-      if (followers.length === 0) {
-        res.status(404).json({ message: "Este usuario no tiene seguidores aún." });
-        return;
-      }
-  
-      res.status(200).json({ followers });
-    } catch (error) {
-      res.status(500).json({ error: "Error al obtener los seguidores del usuario", details: error });
+  try {
+    const targetUsername = req.params.username; // Obtén el username del usuario
+
+    // Verifica si el username está presente
+    if (!targetUsername) {
+      res.status(400).json({ message: "El username del usuario es necesario" });
+      return;
     }
+
+    // Busca al usuario objetivo por su username
+    const targetUser = await User.findOne({ username: targetUsername });
+
+    if (!targetUser) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+      return;
+    }
+
+    const targetUserId = targetUser.id;
+
+    // Busca todos los usuarios que tienen al targetUserId en su lista de seguidores
+    const followers = await User.find({ following: targetUserId }).select(
+      "_id username name surname profilePicture"
+    );
+
+    if (followers.length === 0) {
+      res.status(404).json({ message: "Este usuario no tiene seguidores aún." });
+      return;
+    }
+
+    res.status(200).json({ followers });
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener los seguidores del usuario", details: error });
+  }
 };
+
   
 
-  export const getUserFollowing = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const targetUserId = req.params.id; // Obtén el ID del usuario cuya lista de "seguimiento" deseas consultar
-  
-      // Verifica si el ID del usuario está presente
-      if (!targetUserId) {
-        res.status(400).json({ message: "ID del usuario es necesario" });
-        return;
-      }
-  
-      // Busca el usuario con `targetUserId` y obtiene su lista de 'following'
-      const user = await User.findById(targetUserId).select("following");
-  
-      if (!user) {
-        res.status(404).json({ message: "Usuario no encontrado" });
-        return;
-      }
-  
-      // Busca los usuarios que están en la lista de 'following' de este usuario
-      const following = await User.find({ _id: { $in: user.following } }).select("name username");
-  
-      if (following.length === 0) {
-        res.status(404).json({ message: "Este usuario no sigue a nadie." });
-        return;
-      }
-  
-      res.status(200).json({ following });
-    } catch (error) {
-      res.status(500).json({ error: "Error al obtener las personas que sigue el usuario", details: error });
+export const getUserFollowing = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const targetUsername = req.params.username; // Obtén el username del usuario
+
+    // Verifica si el username está presente
+    if (!targetUsername) {
+      res.status(400).json({ message: "El username del usuario es necesario" });
+      return;
     }
-  };
+
+    // Busca al usuario objetivo por su username
+    const user = await User.findOne({ username: targetUsername }).select("following");
+
+    if (!user) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+      return;
+    }
+
+    // Busca los usuarios que están en la lista de 'following' de este usuario
+    const following = await User.find({ _id: { $in: user.following } }).select(
+      "_id username name surname profilePicture"
+    );
+
+    if (following.length === 0) {
+      res.status(404).json({ message: "Este usuario no sigue a nadie." });
+      return;
+    }
+
+    res.status(200).json({ following });
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener las personas que sigue el usuario", details: error });
+  }
+};
   
   
 
@@ -330,20 +399,129 @@ try {
 };
 
 export const getUserFavorites = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = req.params.userId; // Obtén el ID del usuario desde los parámetros de la solicitud
+  try {
+    const { username } = req.params; // Obtener el username de los parámetros de la URL
 
-        // Busca al usuario y popula la lista de favoritos
-        const user = await User.findById(userId).populate("favorites"); // Asegúrate de que el modelo de Post esté correctamente referenciado
-
-        if (!user) {
-            res.status(404).json({ message: "Usuario no encontrado" });
-            return;
-        }
-
-        res.status(200).json({ favorites: user.favorites });
-    } catch (error) {
-        console.error("Error al obtener favoritos del usuario:", error);
-        res.status(500).json({ error: "Error al obtener favoritos del usuario", details: error });
+    // Verificar que el username esté presente
+    if (!username) {
+      res.status(400).json({ message: "El parámetro 'username' es requerido" });
+      return;
     }
+
+    // Buscar al usuario por su username
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+      return;
+    }
+
+    // Buscar los posts cuyos _id estén en el campo 'favorites' del usuario
+    const favorites = await Post.find({
+      _id: { $in: user.favorites },
+    });
+
+    // Devuelve los favoritos encontrados
+    res.status(200).json({ favorites });
+  } catch (error) {
+    console.error("Error al obtener los favoritos del usuario:", error);
+    res.status(500).json({
+      error: "Error al obtener los favoritos del usuario",
+      details: error,
+    });
+  }
 };
+
+export const deleteAccount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      res.status(400).json({ message: "ID de usuario no proporcionado" });
+      return;
+    }
+
+    // 1. Eliminamos al usuario de las relaciones de otros usuarios
+    await User.updateMany(
+      { followers: userId },
+      { $pull: { followers: userId } }
+    );
+
+    await User.updateMany(
+      { following: userId },
+      { $pull: { following: userId } }
+    );
+
+    await User.updateMany(
+      { favorites: { $in: userId } },
+      { $pull: { favorites: userId } }
+    );
+
+    // 2. Obtener los posts del usuario y eliminar medios en Cloudinary
+    const userPosts = await Post.find({ user: userId });
+
+    for (const post of userPosts) {
+      for (const media of post.media) {
+        if (media.public_id) {
+          await cloudinary.uploader.destroy(media.public_id);
+        }
+      }
+    }
+
+    // 3. Eliminamos posts del usuario
+    await Post.deleteMany({ user: userId });
+
+    // 4. Eliminamos comentarios del usuario en posts de otros usuarios
+    await Post.updateMany(
+      { "comments.user": userId },
+      { $pull: { comments: { user: userId } } }
+    );
+
+    // 5. Eliminamos al usuario
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({ message: "Cuenta eliminada correctamente" });
+  } catch (error) {
+    console.error("Error al eliminar la cuenta:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+//contador de post, seguidores, seguidos, comentarios
+export const getUserStats = async (req: any, res: any) => {
+  try {
+    const { username } = req.params; // Obtener el username de los parámetros de la URL
+
+    // Buscar usuario por username
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    const userId = user._id;
+
+    // Contar posts
+    const postCount = await Post.countDocuments({ user: userId });
+
+    // Contar seguidores y seguidos
+    const followerCount = user.followers.length;
+    const followingCount = user.following.length;
+
+    // Contar comentarios
+    const commentCount = await Post.aggregate([
+      { $unwind: "$comments" },
+      { $match: { "comments.user": userId } },
+      { $count: "totalComments" },
+    ]);
+
+    res.status(200).json({
+      postCount,
+      followerCount,
+      followingCount,
+      commentCount: commentCount[0]?.totalComments || 0,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Error al obtener contador"});
+  }
+};
+
+
