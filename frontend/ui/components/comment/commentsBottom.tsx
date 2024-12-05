@@ -34,7 +34,12 @@ const CommentsBottomSheet = ({ postId, isVisible, onClose }: CommentsBottomSheet
   const dispatch = useAppDispatch();
   const [panY] = useState(new Animated.Value(0));
   const [lastGestureDistance, setLastGestureDistance] = useState(0);
-  const post = useSelector((state: RootState) => selectPostById(state, postId));
+  console.log('CommentsBottomSheet received postId:', postId);
+  const post = useSelector((state: RootState) => 
+    selectPostById(state, postId) || // Busca en posts slice
+    state.profile.userPosts.find(p => p.id === postId) // Busca en profile slice
+  );
+  console.log('Post from selector:', post);
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

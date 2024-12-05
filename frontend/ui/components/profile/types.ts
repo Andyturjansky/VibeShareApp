@@ -33,3 +33,11 @@ export interface ProfileState {
   isLoading: boolean;
   error: string | null;
 }
+
+export interface SearchUserResult {
+  _id: string;
+  name: string;
+  surname: string;
+  username: string;
+  profilePicture: string | null;
+}

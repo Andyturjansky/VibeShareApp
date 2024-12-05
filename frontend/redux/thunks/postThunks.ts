@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { createPost as createPostAction, setLoading, setError } from '../slices/postsSlice';
-import { createPostWithMedia } from '@networking/api/posts';
+import { createPost as createPostAction, setLoading, setError, toggleLike, toggleSave } from '../slices/postsSlice';
+import { createPostWithMedia, togglePostLike, togglePostFavorite } from '@networking/api/posts';
 import { Post } from '@components/post/types';
 import { RootState } from '../store';
 
@@ -48,6 +48,38 @@ export const createPostThunk = createAsyncThunk<Post, CreatePostParams>(
       
     } finally {
       dispatch(setLoading(false));
+    }
+  }
+);
+
+export const toggleLikeThunk = createAsyncThunk(
+  'posts/toggleLike',
+  async (postId: string, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await togglePostLike(postId);
+      dispatch(toggleLike(postId));
+      return response;
+    } catch (error: any) {
+      console.error('Error toggling like:', error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const toggleSaveThunk = createAsyncThunk(
+  'posts/toggleSave',
+  async (postId: string, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const state = getState() as RootState;
+      const post = state.posts.posts.find(p => p.id === postId);
+      if (!post) throw new Error('Post not found');
+
+      const response = await togglePostFavorite(postId, post.isSaved);
+      dispatch(toggleSave(postId));
+      return response;
+    } catch (error: any) {
+      console.error('Error toggling save:', error);
+      return rejectWithValue(error.message);
     }
   }
 );

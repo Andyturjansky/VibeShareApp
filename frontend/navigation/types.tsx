@@ -20,7 +20,7 @@ export enum Routes {
 
   // Profile Stack
   ProfileStack = 'ProfileStack',
-  ProfileMain = 'ProfileMain', // Nueva ruta para la pantalla principal de perfil
+  ProfileMain = 'ProfileMain', 
   Favorites = 'Favorites',
   EditProfile = 'EditProfile',
   Settings = 'Settings',
@@ -57,12 +57,12 @@ export type MainTabsParamList = {
 
 // Parámetros del stack de perfil
 export type ProfileStackParamList = {
-  [Routes.ProfileMain]: { userId?: string }; // Cambio de Profile a ProfileMain
+  [Routes.ProfileMain]: { userId?: string }; 
   [Routes.Favorites]: undefined;
   [Routes.EditProfile]: undefined;
   [Routes.Settings]: undefined;
-  [Routes.Followers]: { userId: string };
-  [Routes.Following]: { userId: string };
+  [Routes.Followers]: { username: string };
+  [Routes.Following]: { username: string };
 };
 
 // Parámetros del stack de creación de posts

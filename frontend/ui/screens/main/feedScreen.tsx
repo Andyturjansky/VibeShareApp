@@ -7,10 +7,12 @@ import { Post as PostType } from '@components/post/types';
 import { colors } from '@styles/colors';
 import CommentsBottomSheet from '@components/comment/commentsBottom';
 import { setPosts, toggleLike, toggleSave } from '@redux/slices/postsSlice';
+import { toggleLikeThunk, toggleSaveThunk } from '@redux/thunks/postThunks';
 import { RootState } from '@redux/store';
 import { getFeedPosts } from '@networking/api/feed';
 import { EmptyState } from '@components/common/emptyState';
 import { ErrorState } from '@components/common/errorState';
+import { AppDispatch } from '@redux/store';
 
 interface FeedScreenProps {
   navigation: any;
@@ -18,7 +20,7 @@ interface FeedScreenProps {
 }
 
 const FeedScreen = ({ navigation, onScrollPositionChange }: FeedScreenProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const posts = useSelector((state: RootState) => state.posts.posts);
   
   const flatListRef = useRef<FlatList>(null);
@@ -134,13 +136,21 @@ const handleLoadMore = useCallback(async () => {
  }
 }, [isLoadingMore, hasMore, currentPage, posts]);
 
-  const handleLikePress = useCallback((postId: string) => {
-    dispatch(toggleLike(postId));
-  }, [dispatch]);
+const handleLikePress = useCallback(async (postId: string) => {
+  try {
+    await dispatch(toggleLikeThunk(postId)).unwrap();
+  } catch (error) {
+    console.error('Error toggling like:', error);
+  }
+}, [dispatch]);
 
-  const handleSavePress = useCallback((postId: string) => {
-    dispatch(toggleSave(postId));
-  }, [dispatch]);
+const handleSavePress = useCallback(async (postId: string) => {
+  try {
+    await dispatch(toggleSaveThunk(postId)).unwrap();
+  } catch (error) {
+    console.error('Error toggling save:', error);
+  }
+}, [dispatch]);
 
   const handleCommentPress = useCallback((postId: string) => {
     setSelectedPostId(postId);

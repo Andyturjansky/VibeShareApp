@@ -87,7 +87,7 @@ export const deleteAccount = createAsyncThunk<void, void>(
   'auth/deleteAccount',
   async (_, { rejectWithValue }) => {
     try {
-      // await authApi.deleteAccount();
+      await authApi.deleteAccount();
       //await authStorage.clearAuth(); 
       return;
     } catch (error : any) {

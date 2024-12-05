@@ -4,19 +4,22 @@ import { Routes, MainTabsParamList } from './types';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ProfileStack } from './profileStack';
 import FeedScreen from '@screens/main/feedScreen';
-import FeedScreenTest from '@screens/main/feedScreenTest';
+import SearchScreen from '@screens/main/searchScreen';
 import { PostStack } from './postStack';
-import { SearchScreen, NewPostScreen, EmptyComponent } from './temporaryScreens';
+import { EmptyComponent } from './temporaryScreens';
 import HomeSvg from '@assets/icons/main/home.svg';
 import SearchSvg from '@assets/icons/main/search.svg';
 import NewPostSvg from '@assets/icons/main/newPost.svg';
 import NotificationsSvg from '@assets/icons/main/notifications.svg';
 import ProfileSvg from '@assets/icons/main/profile.svg';
 import { colors } from '@styles/colors';
+import { useNavigation } from '@react-navigation/native';
 
 const Tab = createBottomTabNavigator<MainTabsParamList>();
 
 export const MainTabNavigator = () => {
+  const navigation = useNavigation();
+
   const handleTabPress = (e: any, navigation: any, route: any) => {
     const isFocused = navigation.isFocused();
 
@@ -32,6 +35,23 @@ export const MainTabNavigator = () => {
         scrollToTop();
       }
     }
+
+    // Manejar el tab de Profile
+    if (route.name === Routes.Profile && isFocused) {
+      e.preventDefault();
+      // Reset la navegación al perfil propio
+      navigation.reset({
+        index: 0,
+        routes: [
+          {
+            name: Routes.MainTabs,
+            state: {
+              routes: [{ name: Routes.Profile }],
+            },
+          },
+        ],
+      });
+    }
   };
 
   return (
@@ -40,7 +60,7 @@ export const MainTabNavigator = () => {
         tabBarActiveTintColor: colors.green,
         tabBarInactiveTintColor: '#F0F0F0',
         headerShown: false,
-        headerShadowVisible: false, // saca la linea por defecto
+        headerShadowVisible: false,
         tabBarStyle: {
           backgroundColor: colors.background.black,
           height: 84,
@@ -126,6 +146,9 @@ export const MainTabNavigator = () => {
             <ProfileSvg fill={color} stroke="none" />
           ),
         }}
+        listeners={({ navigation, route }) => ({
+          tabPress: (e) => handleTabPress(e, navigation, route),
+        })}
       />
     </Tab.Navigator>
   );

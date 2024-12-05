@@ -9,6 +9,12 @@ interface UploadMediaResponse {
   type: 'image' | 'video';
 }
 
+interface BackendLike {
+  userId: string;
+  username: string;
+  _id: string;
+}
+
 export interface BaseBackendPost {
   _id: string;
   user: {
@@ -25,7 +31,7 @@ export interface BaseBackendPost {
     _id: string;
   }>;
   comments: any[];
-  likes: string[];
+  likes: BackendLike[];
   likeCount: number;
  }
  
@@ -39,6 +45,16 @@ interface CreatePostParams {
   mediaType: 'image' | 'video';
   caption: string;
   location: string;
+}
+
+interface LikeResponse {
+  message: string;
+  likeCount: number;
+}
+
+interface FavoriteResponse {
+  message: string;
+  favorites: string[];
 }
 
 const transformUser = (userAuth: UserAuth): BaseUser => ({
@@ -87,7 +103,7 @@ const createPost = async (postData: {
 }): Promise<CreatePostResponse> => {
   try {
     const response = await api.post<CreatePostResponse>(
-      '/posts', // Nota: removido el slash inicial
+      '/posts/createPost', // Nota: removido el slash inicial
       postData
     );
 
@@ -135,6 +151,43 @@ export const createPostWithMedia = async (
     };
   } catch (error) {
     console.error('Error in createPostWithMedia:', error);
+    throw error;
+  }
+};
+
+export const togglePostLike = async (postId: string): Promise<LikeResponse> => {
+  try {
+    const response = await api.post<LikeResponse>('/posts/like', {
+      postId
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    throw error;
+  }
+};
+
+export const togglePostFavorite = async (postId: string, isSaved: boolean): Promise<FavoriteResponse> => {
+  try {
+    if (isSaved) {
+      const response = await api.delete<FavoriteResponse>(`/user/favorites/${postId}`);
+      return response.data;
+    } else {
+      const response = await api.post<FavoriteResponse>(`/user/favorites/${postId}`);
+      return response.data;
+    }
+  } catch (error) {
+    console.error('Error toggling favorite:', error);
+    throw error;
+  }
+};
+
+export const getUserFavorites = async (username: string): Promise<string[]> => {
+  try {
+    const response = await api.get(`/user/favorites/${username}`);
+    return response.data.favorites.map((post: any) => post._id);
+  } catch (error) {
+    console.error('Error getting user favorites:', error);
     throw error;
   }
 };

@@ -49,23 +49,3 @@ export const ProfileStack = () => {
     </Stack.Navigator>
   );
 };
-
-/*
-// Temporary Profile Screen
-const Stack = createNativeStackNavigator();
-
-const TemporaryProfileScreen = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-    <Text>Profile Screen</Text>
-  </View>
-);
-
-export const ProfileStack = () => {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen name="ProfileMain" component={TemporaryProfileScreen} />
-    </Stack.Navigator>
-  );
-};
-
-*/

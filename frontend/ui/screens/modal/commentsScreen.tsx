@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import CommentList from '@components/comment/commentList';
 import CommentInput from '@components/comment/commentInput';
-import { createComment } from '@redux/thunks/commentThunks';
+import { createCommentThunk } from '@redux/thunks/commentThunks';
 import { selectPostById } from '@redux/slices/postsSlice';
 import { AppDispatch, RootState } from '@redux/store';
 
@@ -42,10 +42,10 @@ const CommentsScreen = ({ route, navigation }: CommentsScreenProps) => {
         profilePicture: 'https://example.com/avatar.jpg'
       };
 
-      await dispatch(createComment({
+      await dispatch(createCommentThunk({
         postId,
         text,
-        user: currentUser
+        //user: currentUser
       })).unwrap();
     } catch (error) {
       // Manejar error

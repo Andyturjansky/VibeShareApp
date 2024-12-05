@@ -48,8 +48,8 @@ export const ProfileHeader = ({
         <View style={styles.avatarContainer}>
           <Avatar
             size="large"
-            imageUrl={profilePicture}
-            onPress={onAvatarPress}
+            imageUrl={profilePicture || undefined}
+            onPress={isOwnProfile ? onAvatarPress : undefined}
             showBorder={true}
           />
         </View>
@@ -66,35 +66,49 @@ export const ProfileHeader = ({
             <Text style={styles.statLabel}>Posts</Text>
           </View>
 
-          <Pressable 
-            style={({pressed}) => [
-              styles.statItem,
-              pressed && styles.pressedState
-            ]}
-            onPress={onFollowingPress}
-          >
-            <Text style={styles.statNumber}>{followingCount}</Text>
-            <Text style={styles.statLabel}>Following</Text>
-          </Pressable>
+          {isOwnProfile ? (
+            <Pressable 
+              style={({pressed}) => [
+                styles.statItem,
+                pressed && styles.pressedState
+              ]}
+              onPress={onFollowingPress}
+            >
+              <Text style={styles.statNumber}>{followingCount}</Text>
+              <Text style={styles.statLabel}>Following</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{followingCount}</Text>
+              <Text style={styles.statLabel}>Following</Text>
+            </View>
+          )}
           
-          <Pressable 
-            style={({pressed}) => [
-              styles.statItem,
-              pressed && styles.pressedState
-            ]}
-            onPress={onFollowersPress}
-          >
-            <Text style={styles.statNumber}>{followersCount}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
-          </Pressable>
+          {isOwnProfile ? (
+            <Pressable 
+              style={({pressed}) => [
+                styles.statItem,
+                pressed && styles.pressedState
+              ]}
+              onPress={onFollowersPress}
+            >
+              <Text style={styles.statNumber}>{followersCount}</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{followersCount}</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </View>
+          )}
 
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>{commentsCount}</Text>
             <Text style={styles.statLabel}>Comments</Text>
           </View>
-
         </View>
 
+        {/* Los botones se mantienen igual ya que ya tienes la lógica condicional */}
         <View style={styles.actionButtons}>
           {isOwnProfile ? (
             <>

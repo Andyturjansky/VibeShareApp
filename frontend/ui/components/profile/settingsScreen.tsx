@@ -66,11 +66,11 @@ export const SettingsScreen = () => {
           onPress: async () => {
             setIsLoading(true);
             try {
-              console.log('🔄 Iniciando proceso de logout...');
+              //console.log('🔄 Iniciando proceso de logout...');
               await logout();
-              console.log('✅ Logout completado exitosamente');
+              //console.log('✅ Logout completado exitosamente');
             } catch (error) {
-              console.error('❌ Error durante logout:', error);
+              //console.error('❌ Error durante logout:', error);
               Alert.alert('Error', 'Failed to logout. Please try again.');
             } finally {
               setIsLoading(false);

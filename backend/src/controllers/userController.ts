@@ -5,23 +5,37 @@ import Post from "../models/postModel";
 
 //busca usuario por nombre y apellido
 export const searchUsers = async (req: Request, res: Response): Promise<void> => {
-  const { name, surname } = req.query; // Recibe los parámetros de búsqueda desde la query string
+  const { name, surname, username } = req.query;
 
   // Validación de parámetros
-  if (!name || !surname || typeof name !== "string" || typeof surname !== "string") {
-    res.status(400).json({ message: "Los parámetros 'name' y 'surname' son requeridos y deben ser cadenas de texto" });
+  if ((!name || typeof name !== "string") && 
+      (!surname || typeof surname !== "string") && 
+      (!username || typeof username !== "string")) {
+    res.status(400).json({ 
+      message: "Debes proporcionar al menos 'name', 'surname' o 'username', y deben ser cadenas de texto." 
+    });
     return;
   }
 
   try {
-    // Buscamos usuarios cuyo nombre o apellido coincidan con los valores proporcionados
-    const users = await User.find({
-      name: { $regex: name, $options: "i" }, // $regex para buscar coincidencia parcial, con opción 'i' para insensibilidad a mayúsculas/minúsculas
-      surname: { $regex: surname, $options: "i" }
-    });
+    // Construimos la consulta dinámica según los parámetros proporcionados
+    const searchCriteria: Record<string, any> = {};
+
+    if (name) {
+      searchCriteria.name = { $regex: name, $options: "i" }; // Búsqueda parcial e insensible a mayúsculas
+    }
+    if (surname) {
+      searchCriteria.surname = { $regex: surname, $options: "i" };
+    }
+    if (username) {
+      searchCriteria.username = { $regex: username, $options: "i" };
+    }
+
+    // Realizamos la búsqueda con los criterios dinámicos
+    const users = await User.find(searchCriteria);
 
     if (users.length === 0) {
-      res.status(404).json({ message: "No se encontraron usuarios con ese nombre y apellido" });
+      res.status(404).json({ message: "No se encontraron usuarios que coincidan con los criterios de búsqueda." });
       return;
     }
 
@@ -31,6 +45,7 @@ export const searchUsers = async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ error: "Error al buscar usuarios", details: error });
   }
 };
+
 
 // Controlador para obtener todos los usuarios
 export const getAllUsers = async (req: Request, res: Response): Promise<void> => {

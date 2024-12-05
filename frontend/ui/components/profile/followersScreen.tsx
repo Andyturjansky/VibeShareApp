@@ -1,57 +1,49 @@
+// followersScreen.tsx
 import React, { useEffect } from 'react';
-import { View, FlatList, ActivityIndicator } from 'react-native';
+import { View, FlatList, StyleSheet } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppDispatch, useAppSelector } from '@redux/hooks';
+import { fetchFollowers, selectFollowers } from '@redux/slices/profileSlice';
 import { UserListItem } from '@components/profile/userList/userListItem';
-import { styles } from './styles';
 import { colors } from '@styles/colors';
-import { fetchFollowers, selectFollowers, selectIsLoading, } from '@redux/slices/profileSlice';
-import { Routes } from '@navigation/types';
+import { ProfileStackParamList, Routes } from '@navigation/types';
 
-interface FollowersScreenProps {
-  navigation: any;
-  route: any;
-}
+type FollowersScreenProps = NativeStackScreenProps<ProfileStackParamList, Routes.Followers>;
 
-export const FollowersScreen = ({ 
-  navigation, 
-  route 
-} : FollowersScreenProps) => {
+export const FollowersScreen: React.FC<FollowersScreenProps> = ({ route, navigation }) => {
   const dispatch = useAppDispatch();
   const followers = useAppSelector(selectFollowers);
-  const isLoading = useAppSelector(selectIsLoading);
-  const { userId } = route.params;
+  const { username } = route.params;
 
   useEffect(() => {
-    if (userId) {
-      dispatch(fetchFollowers(userId));
+    if (username) {
+      dispatch(fetchFollowers(username));
     }
-  }, [dispatch, userId]);
-
-  const handleUserPress = (selectedUserId: string) => {
-    navigation.navigate(Routes.Profile, { userId: selectedUserId });
-  };
-
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.text.grey} />
-      </View>
-    );
-  }
+  }, [username]);
 
   return (
     <View style={styles.container}>
       <FlatList
         data={followers}
+        keyExtractor={item => item.id}
         renderItem={({ item }) => (
-          <UserListItem 
-            user={item} 
-            onUserPress={handleUserPress}
+          <UserListItem
+            id={item.id}
+            profilePicture={item.profilePicture}
+            username={item.username}
+            firstName={item.firstName}
+            lastName={item.lastName}
+            navigation={navigation}
           />
         )}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
       />
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.black,
+  },
+});

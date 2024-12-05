@@ -1,4 +1,3 @@
-// redux/thunks/commentThunks.ts
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { addComment as addCommentApi } from '@networking/api/comments';
 import { updatePost, setError } from '@redux/slices/postsSlice';

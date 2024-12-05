@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Modal, TextInput, ScrollView, Pressable } from 'react-native';
 import { useAppDispatch } from '@redux/hooks';
-import { updateUserProfile } from '@redux/slices/profileSlice';
+import { updateUserProfile, updateProfileImage, updateCoverImage } from '@redux/slices/profileSlice';
 import { ImageSelector } from '../imageSelector/imageSelector';
 import { styles } from './styles';
 import { colors } from '@styles/colors';
@@ -33,7 +33,7 @@ export const EditProfileModal = ({
   const handleImageSelect = async (type: 'profile' | 'cover') => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images', 'videos'], // Actualizado según la nueva API
         allowsEditing: true,
         aspect: type === 'profile' ? [1, 1] : [16, 9],
         quality: 0.7,
@@ -53,7 +53,36 @@ export const EditProfileModal = ({
 
   const handleSave = async () => {
     try {
-      await dispatch(updateUserProfile(formData)).unwrap();
+      // Primero actualizar las imágenes si han cambiado
+      if (formData.profilePicture !== profile.profilePicture) {
+        const profileFormData = new FormData();
+        profileFormData.append('profilePicture', {
+          uri: formData.profilePicture,
+          type: 'image/jpeg',
+          name: 'profile-picture.jpg'
+        } as any);
+        await dispatch(updateProfileImage(profileFormData)).unwrap();
+      }
+  
+      if (formData.coverPicture !== profile.coverPicture) {
+        const coverFormData = new FormData();
+        coverFormData.append('coverPicture', {
+          uri: formData.coverPicture,
+          type: 'image/jpeg',
+          name: 'cover-picture.jpg'
+        } as any);
+        await dispatch(updateCoverImage(coverFormData)).unwrap();
+      }
+  
+      // Luego actualizar el resto de los datos del perfil
+      await dispatch(updateUserProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        username: formData.username,
+        bio: formData.bio,
+        gender: formData.gender
+      })).unwrap();
+  
       onClose();
     } catch (error) {
       console.error('Error updating profile:', error);

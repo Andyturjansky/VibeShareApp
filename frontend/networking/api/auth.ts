@@ -103,7 +103,7 @@ export const authApi = {
 
   deleteAccount: async () => {
     try {
-      const response = await api.delete('/user/delete');
+      const response = await api.delete('/user/deleteAccount');
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {

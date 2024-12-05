@@ -5,7 +5,8 @@ import { ProfileHeader } from '@components/profile/profileHeader';
 import { EditProfileModal } from '@components/profile/editProfileModal/editProfileModal';
 import Post from '@components/post';
 import { styles } from '@components/profile/styles';
-import { fetchUserProfile, fetchUserPosts, toggleFollowUser, selectViewedProfile, selectCurrentProfile, selectIsLoading, selectUserPosts } from '@redux/slices/profileSlice';
+import { fetchUserProfile, fetchUserPosts, toggleFollowUser, selectViewedProfile, selectCurrentProfile, selectIsLoading, selectUserPosts, loadInitialProfile } from '@redux/slices/profileSlice';
+import CommentsBottomSheet from '@components/comment/commentsBottom';
 import { Routes } from '@navigation/types';
 import { Post as PostType } from '@components/post/types';
 
@@ -14,12 +15,13 @@ interface ProfileScreenProps {
   route: any;
 }
 
-export const ProfileScreen = ({ navigation, route } : ProfileScreenProps) => {
+export const ProfileScreen = ({ navigation, route }: ProfileScreenProps) => {
   const dispatch = useAppDispatch();
   const viewedProfile = useAppSelector(selectViewedProfile);
   const currentProfile = useAppSelector(selectCurrentProfile);
   const isLoading = useAppSelector(selectIsLoading);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   const userId = route.params?.userId;
   const isOwnProfile = !userId || userId === currentProfile?.id;
@@ -27,13 +29,39 @@ export const ProfileScreen = ({ navigation, route } : ProfileScreenProps) => {
   const userPosts = useAppSelector(selectUserPosts);
 
   useEffect(() => {
+    const loadProfile = async () => {
+      if (!currentProfile) {
+        console.log('No current profile, loading initial...');
+        try {
+          await dispatch(loadInitialProfile()).unwrap();
+        } catch (error) {
+          console.error('Error loading initial profile:', error);
+        }
+      }
+    };
+    
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
     if (userId && userId !== currentProfile?.id) {
+      // Cargar perfil de otro usuario
       dispatch(fetchUserProfile(userId));
+    } else if (isOwnProfile && currentProfile?.id) {
+      // Cargar posts propios solo si es perfil propio
+      dispatch(fetchUserPosts());
     }
-    if (isOwnProfile && currentProfile?.id) {
-      dispatch(fetchUserPosts(currentProfile.id));
-    }
-  }, [userId, currentProfile?.id, dispatch, isOwnProfile]);
+  }, [userId, currentProfile?.id, isOwnProfile]);
+
+  useEffect(() => {
+  console.log('Current userPosts:', userPosts);
+}, [userPosts]);
+
+  useEffect(() => {
+    console.log('Current Profile:', currentProfile);
+    console.log('Viewed Profile:', viewedProfile);
+    console.log('Profile to Show:', profileToShow);
+  }, [currentProfile, viewedProfile, profileToShow]);
 
   const handleEditProfile = useCallback(() => {
     setIsEditModalVisible(true);
@@ -49,26 +77,35 @@ export const ProfileScreen = ({ navigation, route } : ProfileScreenProps) => {
   }, [navigation]);
 
   const handleFollowPress = useCallback(() => {
-    if (userId) {
-      dispatch(toggleFollowUser(userId));
+    if (viewedProfile?.username) {
+      dispatch(toggleFollowUser(viewedProfile.username));
     }
-  }, [dispatch, userId]);
+  }, [dispatch, viewedProfile?.username]);
 
   const handleFollowersPress = useCallback(() => {
-    navigation.navigate(Routes.Followers, { userId: profileToShow?.id });
-  }, [navigation, profileToShow?.id]);
-
+    if (profileToShow?.username) {
+      navigation.navigate(Routes.Followers, { username: profileToShow.username });
+    }
+  }, [navigation, profileToShow?.username]);
+  
   const handleFollowingPress = useCallback(() => {
-    navigation.navigate(Routes.Following, { userId: profileToShow?.id });
-  }, [navigation, profileToShow?.id]);
+    if (profileToShow?.username) {
+      navigation.navigate(Routes.Following, { username: profileToShow.username });
+    }
+  }, [navigation, profileToShow?.username]);
 
   const handleLikePress = (postId: string) => {
     // Implementar lógica de like
   };
 
-  const handleCommentPress = (postId: string) => {
-    navigation.navigate(Routes.Comments, { postId });
-  };
+  const handleCommentPress = useCallback((postId: string) => {
+    console.log('Selected post for comments:', userPosts.find(p => p.id === postId));
+    setSelectedPostId(postId);
+  }, [userPosts]);
+
+  const handleCloseComments = useCallback(() => {
+    setSelectedPostId(null);
+  }, []);
 
   const handleSavePress = (postId: string) => {
     // Implementar lógica de guardar post
@@ -88,14 +125,15 @@ export const ProfileScreen = ({ navigation, route } : ProfileScreenProps) => {
       <ProfileHeader
         profile={profileToShow}
         isOwnProfile={isOwnProfile}
-        onEditProfile={handleEditProfile}
-        onFollowPress={handleFollowPress}
-        onFollowersPress={handleFollowersPress}
-        onFollowingPress={handleFollowingPress}
-        onSettingsPress={handleSettingsPress}
+        onEditProfile={isOwnProfile ? handleEditProfile : () => {}}
+        onFollowPress={!isOwnProfile ? handleFollowPress : () => {}}
+        onFollowersPress={isOwnProfile ? handleFollowersPress : () => {}}
+        onFollowingPress={isOwnProfile ? handleFollowingPress : () => {}}
+        onSettingsPress={isOwnProfile ? handleSettingsPress : () => {}}
       />
     ) : null
-  ), [profileToShow, isOwnProfile, handleEditProfile, handleFollowPress, handleFollowersPress, handleFollowingPress, handleSettingsPress]);
+  ), [profileToShow, isOwnProfile, handleEditProfile, handleFollowPress, 
+    handleFollowersPress, handleFollowingPress, handleSettingsPress]);
 
   return (
     <View style={styles.container}>
@@ -105,9 +143,26 @@ export const ProfileScreen = ({ navigation, route } : ProfileScreenProps) => {
         keyExtractor={item => item.id}
         ListHeaderComponent={renderHeader}
         showsVerticalScrollIndicator={false}
+        refreshing={isLoading}
+        onRefresh={() => {
+          if (userId) {
+            dispatch(fetchUserProfile(userId));
+            if (isOwnProfile) {
+              dispatch(fetchUserPosts());
+            }
+          } else if (currentProfile?.id) {
+            dispatch(fetchUserProfile(currentProfile.id));
+          }
+        }}
       />
 
-      {profileToShow && (
+      <CommentsBottomSheet
+        postId={selectedPostId || ''}
+        isVisible={!!selectedPostId}
+        onClose={handleCloseComments}
+      />
+      
+      {isOwnProfile && profileToShow && (
         <EditProfileModal
           visible={isEditModalVisible}
           onClose={handleCloseEditModal}

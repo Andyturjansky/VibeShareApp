@@ -42,7 +42,7 @@ export const transformComment = (comment: BackendComment) => {
 export const addComment = async (postId: string, text: string): Promise<AddCommentResponse> => {
   try {
     const response = await api.post<AddCommentResponse>(
-      `/posts/${postId}/comment`,
+      `/posts/comment`,
       {
         postId,
         text

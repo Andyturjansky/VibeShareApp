@@ -94,8 +94,9 @@ export const getFollowingPosts = async (req: Request, res: Response) => {
 
     // Busca posts de los usuarios que sigue
     const posts = await Post.find({ user: { $in: user.following } })
-      .populate("user", "username") // Poblamos el campo de usuario con el username
-      .sort({ date: -1 }); // Ordenamos por fecha descendente
+      .populate("user", "username profilePicture") // Obtenemos todos los posts y poblamos el campo de usuario
+      .populate('comments.user', 'username') // Añadir esta línea
+      .sort({ date: -1 }); // Ordenamos por fecha de manera descendente (de más nuevo a más viejo)
 
     res.status(200).json(posts);
     return 
@@ -133,8 +134,9 @@ export const getPostsByUserId = async (req: Request, res: Response): Promise<voi
 
     const userId = user.id;
     const posts = await PostModel.find({ user: userId }) // Buscamos los posts del usuario
-      .populate("user", "username profilePicture") // Poblamos el campo de usuario
-      .sort({ date: -1 }); // Ordenamos por fecha de manera descendente
+    .populate("user", "username profilePicture") // Obtenemos todos los posts y poblamos el campo de usuario
+    .populate('comments.user', 'username') // Añadir esta línea
+    .sort({ date: -1 }); // Ordenamos por fecha de manera descendente (de más nuevo a más viejo)
 
     res.status(200).json(posts); // Enviamos los posts en la respuesta
   } catch (error) {
@@ -272,7 +274,9 @@ export const addComment = async (req: Request, res: Response): Promise<void> => 
           postId,
           { $push: { comments: comment } },
           { new: true, useFindAndModify: false }
-      ).populate("comments.user", "name username"); // Poblamos el usuario del comentario
+      )
+      .populate("user", "username profilePicture")
+      .populate("comments.user", "name username"); // Poblamos el usuario del comentario
 
       if (!updatedPost) {
           res.status(404).json({ message: "Post no encontrado" });
