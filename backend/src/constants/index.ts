@@ -3,7 +3,7 @@ import cloudinary from 'cloudinary';
 dotenv.config();
 
 export const PORT = process.env.PORT || 3000;
-export const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://andresturjansky:testings123@vibesharecluster.gay84.mongodb.net/?retryWrites=true&w=majority&appName=vibeShareCluster";
+export const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://andresturjansky:testing123@vibesharecluster.gay84.mongodb.net/?retryWrites=true&w=majority&appName=vibeShareCluster";
 export const JWT_SECRET = process.env.JWT_SECRET || "this_is_my_secret";
 // Client IDs de Google
 // constants/index.ts

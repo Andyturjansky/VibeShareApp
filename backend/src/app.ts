@@ -11,11 +11,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-// Configuración express-fileupload
-app.use(fileUpload({
-  useTempFiles: true, // Usa archivos temporales
-  tempFileDir: "/tmp/", // Define el directorio temporal
-}));
 
 // Rutas de autenticación
 app.use("/auth", authRouter);
@@ -35,3 +30,8 @@ connectToDatabase().then(() => {
   });
 });
 
+// Configuración express-fileupload
+app.use(fileUpload({
+  useTempFiles: true, // Usa archivos temporales
+  tempFileDir: "/tmp/", // Define el directorio temporal
+}));

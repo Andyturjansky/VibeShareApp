@@ -7,8 +7,8 @@ interface ApiError {
   error: string;
 }
 
-const BASE_URL = 'http://localhost:3000';
-//const BASE_URL = 'https://backendmyapp.onrender.com';
+//const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'https://vibeshareapp.onrender.com';
 
 
 const api = axios.create({

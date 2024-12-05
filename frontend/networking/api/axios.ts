@@ -3,10 +3,8 @@ import { authStorage } from '../storage/auth';
 
 // Crear una instancia de axios con la URL base
 const api = axios.create({
-  baseURL: 'http://localhost:3000',
-  //baseURL: 'http://localhost:3000/api',
-  //baseURL: 'http://192.168.0.241:3000/api'
-  //baseURL: 'https://backendmyapp.onrender.com/api'
+  //baseURL: 'http://localhost:3000',
+  baseURL: 'https://vibeshareapp.onrender.com'
 });
 
 // Interceptor para añadir el token a todas las peticiones
