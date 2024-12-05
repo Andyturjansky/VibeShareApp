@@ -3,16 +3,18 @@ import { FlatList, RefreshControl, ActivityIndicator, View, StyleSheet } from 'r
 import { useScrollToTop } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import Post from '@components/post';
-import { Post as PostType } from '@components/post/types';
 import { colors } from '@styles/colors';
 import CommentsBottomSheet from '@components/comment/commentsBottom';
-import { setPosts, toggleLike, toggleSave } from '@redux/slices/postsSlice';
+import { setPosts } from '@redux/slices/postsSlice';
 import { toggleLikeThunk, toggleSaveThunk } from '@redux/thunks/postThunks';
 import { RootState } from '@redux/store';
 import { getFeedPosts } from '@networking/api/feed';
 import { EmptyState } from '@components/common/emptyState';
 import { ErrorState } from '@components/common/errorState';
 import { AppDispatch } from '@redux/store';
+import { getAds } from '@networking/api/ads';
+import AdComponent from '@components/ad';
+import { setAds, Ad } from '@redux/slices/adsSlice';
 
 interface FeedScreenProps {
   navigation: any;
@@ -33,6 +35,9 @@ const FeedScreen = ({ navigation, onScrollPositionChange }: FeedScreenProps) => 
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [lastPosition, setLastPosition] = useState(0);
   const [isAtTop, setIsAtTop] = useState(true);
+  const [scrollingToTop, setScrollingToTop] = useState(false);
+  const [currentScrollPosition, setCurrentScrollPosition] = useState(0);
+  const ads = useSelector((state: RootState) => state.ads.ads);
 
   const loadPosts = async (page: number = 0, refresh: boolean = false) => {
     try {
@@ -70,8 +75,48 @@ const FeedScreen = ({ navigation, onScrollPositionChange }: FeedScreenProps) => 
     }
   };
 
+  const loadAds = async () => {
+    try {
+      const response = await getAds();
+      if (Array.isArray(response) && response.length > 0) {
+        const validAds = response.filter(ad => ad?.commerce); // Solo ads válidos
+        dispatch(setAds(validAds));
+      }
+    } catch (error) {
+      console.error('Error loading ads:', error);
+    }
+  };
+
+  const getMixedContent = useCallback(() => {
+    if (!Array.isArray(posts)) return [];
+    if (!Array.isArray(ads) || ads.length === 0) {
+      return posts.map(post => ({ type: 'post', data: post }));
+    }
+  
+    const mixed = [];
+    let adIndex = 0;
+  
+    for (let i = 0; i < posts.length; i++) {
+      if (posts[i]) {
+        mixed.push({ type: 'post', data: posts[i] });
+        
+        // Después de cada 3 posts, insertar una propaganda
+        if ((i + 1) % 3 === 0 && adIndex < ads.length) {
+          const ad = ads[adIndex];
+          if (ad?.commerce) { // Validación adicional
+            mixed.push({ type: 'ad', data: ad });
+            adIndex++;
+          }
+        }
+      }
+    }
+  
+    return mixed;
+  }, [posts, ads]);
+
   useEffect(() => {
     initializeFeed();
+    loadAds();
   }, []);
 
   useScrollToTop(flatListRef);
@@ -84,13 +129,18 @@ const FeedScreen = ({ navigation, onScrollPositionChange }: FeedScreenProps) => 
       });
       setIsAtTop(false);
     } else {
+      // Guardamos la posición actual antes de ir arriba
+      if (!isAtTop) {
+        setLastPosition(currentScrollPosition);
+      }
       flatListRef.current?.scrollToOffset({
         offset: 0,
         animated: true
       });
       setIsAtTop(true);
+      setScrollingToTop(true);
     }
-  }, [isAtTop, lastPosition]);
+  }, [isAtTop, lastPosition, currentScrollPosition]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('tabPress', (e: any) => {
@@ -105,9 +155,17 @@ const FeedScreen = ({ navigation, onScrollPositionChange }: FeedScreenProps) => 
   const handleScroll = (event: any) => {
     const currentOffset = event.nativeEvent.contentOffset.y;
     onScrollPositionChange?.(currentOffset);
+    
+    // Actualizamos la posición actual del scroll
+    setCurrentScrollPosition(currentOffset);
+    
+    // Solo actualizamos isAtTop
     setIsAtTop(currentOffset === 0);
-    if (currentOffset > 0) {
-      setLastPosition(currentOffset);
+    
+    // Si llegamos a la parte superior después de un scrollToTop programático,
+    // reseteamos el flag
+    if (currentOffset === 0 && scrollingToTop) {
+      setScrollingToTop(false);
     }
   };
 
@@ -115,7 +173,10 @@ const FeedScreen = ({ navigation, onScrollPositionChange }: FeedScreenProps) => 
     setIsRefreshing(true);
     setCurrentPage(0);
     try {
-      await loadPosts(0, true);
+      await Promise.all([
+        loadPosts(0, true),
+        loadAds()
+      ]);
     } finally {
       setIsRefreshing(false);
     }
@@ -164,15 +225,27 @@ const handleSavePress = useCallback(async (postId: string) => {
     navigation.navigate('Profile', { userId });
   }, [navigation]);
 
-  const renderPost = useCallback(({ item }: { item: PostType }) => (
-    <Post
-      post={item}
-      onLikePress={handleLikePress}
-      onCommentPress={handleCommentPress}
-      onSavePress={handleSavePress}
-      onUserPress={handleUserPress}
-    />
-  ), [handleLikePress, handleCommentPress, handleSavePress, handleUserPress]);
+  const renderItem = useCallback(({ item }: { item: any }) => {
+    if (!item?.data) return null;
+  
+    if (item.type === 'ad' && item.data?.commerce) {
+      return <AdComponent ad={item.data} />;
+    }
+  
+    if (item.type === 'post' && item.data?.id) {
+      return (
+        <Post
+          post={item.data}
+          onLikePress={handleLikePress}
+          onCommentPress={handleCommentPress}
+          onSavePress={handleSavePress}
+          onUserPress={handleUserPress}
+        />
+      );
+    }
+  
+    return null;
+  }, [handleLikePress, handleCommentPress, handleSavePress, handleUserPress]);
 
   const renderFooter = () => {
     if (!isLoadingMore) return null;
@@ -194,23 +267,27 @@ const handleSavePress = useCallback(async (postId: string) => {
 
   if (error) {
     return <ErrorState message={error} onRetry={initializeFeed} />;
-  }
-
-  if (!isLoading && posts.length === 0) {
-    return <EmptyState message="No hay posts para mostrar" />;
-  }
+  } 
 
   return (
     <>
       <FlatList
         ref={flatListRef}
-        data={posts}
-        renderItem={renderPost}
-        keyExtractor={item => item.id}
+        data={getMixedContent() || []}
+        renderItem={renderItem}
+        keyExtractor={item => {
+          if (!item?.data) return `empty-${Math.random()}`;
+          return item.type === 'post' ? 
+            `post-${item.data.id || Math.random()}` : 
+            `ad-${item.data.commerce || Math.random()}`;
+        }}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={renderFooter}
         onScroll={handleScroll}
+        ListEmptyComponent={
+          !isLoading ? <EmptyState message="There are no posts to show." /> : null
+        }
         refreshControl={
           <RefreshControl 
             refreshing={isRefreshing} 
@@ -222,7 +299,7 @@ const handleSavePress = useCallback(async (postId: string) => {
         }
         contentContainerStyle={{ 
           backgroundColor: colors.background.black,
-          flexGrow: 1 // Asegura que EmptyState se centre cuando no hay posts
+          flexGrow: 1
         }} 
         style={{ backgroundColor: colors.background.black }}
       />

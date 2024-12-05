@@ -57,7 +57,7 @@ export const LoginScreen = () => {
      
     } catch (error: any) {
       setError(error?.message || 'Failed to login');
-      console.error('Login error:', error);
+      //console.error('Login error:', error);
     } finally {
       setIsLoading(false);
     }

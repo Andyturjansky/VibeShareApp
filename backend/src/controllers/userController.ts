@@ -434,7 +434,10 @@ export const getUserFavorites = async (req: Request, res: Response): Promise<voi
     // Buscar los posts cuyos _id estén en el campo 'favorites' del usuario
     const favorites = await Post.find({
       _id: { $in: user.favorites },
-    });
+    })
+    .populate('user', '_id username profilePicture') // Populate del usuario que creó el post
+    .populate('comments.user', 'username') // Populate de los usuarios en los comentarios
+    .sort({ date: -1 }); // Ordenar por fecha, más recientes primero
 
     // Devuelve los favoritos encontrados
     res.status(200).json({ favorites });

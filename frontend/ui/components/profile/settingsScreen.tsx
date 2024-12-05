@@ -4,6 +4,7 @@ import { Pressable } from 'react-native';
 import { colors } from '@styles/colors';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@context/auth';
+import { Routes } from '@navigation/types';
 
 interface SettingItemProps {
   label: string;
@@ -46,9 +47,13 @@ const SettingItem = ({
   </Pressable>
 );
 
-export const SettingsScreen = () => {
+export const SettingsScreen = ({ navigation }: { navigation: any }) => {
   const { logout, deleteAccount } = useAuth(); 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const handleSavedPosts = () => {
+    navigation.navigate(Routes.Favorites);
+  };;
 
   const handleLogout = useCallback(async () => {
     if (isLoading) return; 
@@ -114,6 +119,14 @@ export const SettingsScreen = () => {
 
   return (
     <View style={styles.container}>
+            <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Content</Text>
+        <SettingItem
+          label="Saved Posts"
+          icon="bookmark-outline"
+          onPress={handleSavedPosts}
+        />
+      </View>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <SettingItem

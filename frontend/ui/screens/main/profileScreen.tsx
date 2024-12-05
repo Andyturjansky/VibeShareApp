@@ -9,6 +9,7 @@ import { fetchUserProfile, fetchUserPosts, toggleFollowUser, selectViewedProfile
 import CommentsBottomSheet from '@components/comment/commentsBottom';
 import { Routes } from '@navigation/types';
 import { Post as PostType } from '@components/post/types';
+import { toggleLikeThunk, toggleSaveThunk } from '@redux/thunks/postThunks';
 
 interface ProfileScreenProps {
   navigation: any;
@@ -94,9 +95,17 @@ export const ProfileScreen = ({ navigation, route }: ProfileScreenProps) => {
     }
   }, [navigation, profileToShow?.username]);
 
-  const handleLikePress = (postId: string) => {
-    // Implementar lógica de like
-  };
+  const handleLikePress = useCallback(async (postId: string) => {
+    try {
+      await dispatch(toggleLikeThunk(postId)).unwrap();
+      // Si quieres actualizar los posts después del like
+      if (isOwnProfile && currentProfile?.id) {
+        dispatch(fetchUserPosts());
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
+  }, [dispatch, isOwnProfile, currentProfile?.id]);
 
   const handleCommentPress = useCallback((postId: string) => {
     console.log('Selected post for comments:', userPosts.find(p => p.id === postId));
@@ -107,16 +116,24 @@ export const ProfileScreen = ({ navigation, route }: ProfileScreenProps) => {
     setSelectedPostId(null);
   }, []);
 
-  const handleSavePress = (postId: string) => {
-    // Implementar lógica de guardar post
-  };
+  const handleSavePress = useCallback(async (postId: string) => {
+    try {
+      await dispatch(toggleSaveThunk(postId)).unwrap();
+      // Si quieres actualizar los posts después de guardar/desguardar
+      if (isOwnProfile && currentProfile?.id) {
+        dispatch(fetchUserPosts());
+      }
+    } catch (error) {
+      console.error('Error toggling save:', error);
+    }
+  }, [dispatch, isOwnProfile, currentProfile?.id]);
 
   const renderPost = useCallback(({ item }: { item: PostType }) => (
     <Post
       post={item}
       onLikePress={handleLikePress}
       onCommentPress={handleCommentPress}
-      onSavePress={handleSavePress}
+      onSavePress={undefined}
     />
   ), [handleLikePress, handleCommentPress, handleSavePress]);
 

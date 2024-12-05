@@ -3,7 +3,8 @@ import { Routes, ProfileStackParamList } from './types';
 import { ProfileScreen } from '@screens/main/profileScreen';
 import { FollowersScreen } from '@components/profile/followersScreen';
 import { FollowingScreen } from '@components/profile/followingScreen';
-import { SettingsScreen } from '@components/profile/settingsScreen'; // La crearemos después
+import { SettingsScreen } from '@components/profile/settingsScreen'; 
+import { SavedPostsScreen } from '@components/profile/savedPostsScreen'; 
 import { colors } from '@styles/colors';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -45,6 +46,13 @@ export const ProfileStack = () => {
         name={Routes.Settings}
         component={SettingsScreen}
         options={{ title: 'Settings' }}
+      />
+      <Stack.Screen
+        name={Routes.Favorites}
+        component={SavedPostsScreen}
+        options={{
+          title: 'Saved Posts',
+          headerShown: true,}}
       />
     </Stack.Navigator>
   );

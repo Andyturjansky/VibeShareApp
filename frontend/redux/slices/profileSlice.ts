@@ -306,7 +306,7 @@ const profileSlice = createSlice({
         state.isLoading = false;
         state.error = action.error.message || 'Error al cargar followers';
         console.error('Error fetching followers:', action.error); // Para debug
-      });
+      })
   },
 });
 

@@ -2,6 +2,7 @@ import api from './axios';
 import { Post } from '@components/post/types';
 import { UserAuth } from '@components/auth/types';
 import { BaseUser } from '@components/user';
+import { transformPost } from './feed';
 
 // Interfaces para las respuestas del backend
 interface UploadMediaResponse {
@@ -182,10 +183,17 @@ export const togglePostFavorite = async (postId: string, isSaved: boolean): Prom
   }
 };
 
-export const getUserFavorites = async (username: string): Promise<string[]> => {
+export const getUserFavorites = async (username: string): Promise<Post[]> => {
   try {
-    const response = await api.get(`/user/favorites/${username}`);
-    return response.data.favorites.map((post: any) => post._id);
+    const response = await api.get<{ favorites: BaseBackendPost[] }>(`/user/favorites/${username}`);
+    
+    // Usar la misma función transformPost que usa el feed
+    const transformedPosts = response.data.favorites.map(post => ({
+      ...transformPost(post), // Usa la función común de transformación
+      isSaved: true // Siempre true ya que son posts guardados
+    }));
+
+    return transformedPosts;
   } catch (error) {
     console.error('Error getting user favorites:', error);
     throw error;
