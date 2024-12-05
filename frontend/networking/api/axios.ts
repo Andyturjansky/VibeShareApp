@@ -1,13 +1,12 @@
 import axios from 'axios';
 import { authStorage } from '../storage/auth';
+import { store } from '../../redux/store';
+import { logout } from '../../redux/slices/authSlice';
 
-// Crear una instancia de axios con la URL base
 const api = axios.create({
-  //baseURL: 'http://localhost:3000',
   baseURL: 'https://vibeshareapp.onrender.com'
 });
 
-// Interceptor para añadir el token a todas las peticiones
 api.interceptors.request.use(
   async (config) => {
     try {
@@ -26,14 +25,12 @@ api.interceptors.request.use(
   }
 );
 
-// Interceptor para manejar respuestas y errores
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // Si el error es 401 (no autorizado), podríamos manejar el refresh token aquí
     if (error.response?.status === 401) {
       console.log('Token expired or invalid');
-      // Aca va la lógica de refresh token
+      await store.dispatch(logout());
     }
     return Promise.reject(error);
   }

@@ -47,7 +47,7 @@ export const EditProfileModal = ({
         }));
       }
     } catch (error) {
-      console.error('Error selecting image:', error);
+      //console.error('Error selecting image:', error);
     }
   };
 
@@ -85,7 +85,7 @@ export const EditProfileModal = ({
   
       onClose();
     } catch (error) {
-      console.error('Error updating profile:', error);
+      //console.error('Error updating profile:', error);
     }
   };
 
